@@ -201,26 +201,26 @@
         const countdownDisplay = document.getElementById('countdown-display');
         const countdownDisplayPlayer = document.getElementById('countdown-display-player');
         const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-        const ringSound = new Audio('https://freesound.org/data/previews/140/140411_2527025-lq.mp3');
+        const ringSound = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
 
         let isMaster = false;
         let myName = '';
         let currentRoomCode = '';
         let currentRoundId = '';
         let hasPressedThisRound = false;
-        let isWinner = false; // Biến mới để theo dõi người chiến thắng
-
+        
         // Hàm phát âm thanh chuông
         const playRingSound = () => {
-            let playCount = 0;
-            const playSoundInterval = setInterval(() => {
-                ringSound.currentTime = 0; // Đặt lại âm thanh về đầu
-                ringSound.play();
-                playCount++;
-                if (playCount === 3) {
-                    clearInterval(playSoundInterval);
-                }
-            }, 500);
+            // Cần tải lại âm thanh để phát từ đầu
+            ringSound.src = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+            ringSound.load();
+            ringSound.oncanplaythrough = () => {
+                ringSound.play().then(() => {
+                    // Âm thanh đã phát
+                }).catch(e => {
+                    console.error("Không thể phát âm thanh:", e);
+                });
+            };
         };
 
         const generateRoomCode = () => {
@@ -237,13 +237,11 @@
                     const players = data.players || [];
                     const status = data.status;
                     const countdown = data.countdown;
-                    const firstPresser = data.firstPresser;
                     
                     // Cập nhật currentRoundId và reset trạng thái bấm nếu vòng chơi mới
                     if (data.round_id !== currentRoundId) {
                         currentRoundId = data.round_id;
                         hasPressedThisRound = false;
-                        isWinner = false;
                         if (!isMaster) {
                             buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
                         }
@@ -277,12 +275,6 @@
                         }
                     }
 
-                    // Xử lý âm thanh và màu sắc khi có người bấm chuông đầu tiên
-                    if (firstPresser && firstPresser === myName && !isWinner) {
-                        isWinner = true;
-                        playRingSound();
-                    }
-
                     // Ẩn đếm ngược khi kết thúc
                     if (status === 'inactive' && isMaster) {
                         countdownDisplay.classList.add('hidden');
@@ -309,8 +301,10 @@
                     li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${item.pressTime.toLocaleTimeString()}</span>`;
                     resultsList.appendChild(li);
 
-                    // Đổi màu nút bấm cho người chiến thắng
+                    // Xử lý âm thanh và màu sắc cho người chiến thắng
                     if (index === 0 && item.playerName === myName) {
+                        // Người chơi này là người chiến thắng, phát âm thanh
+                        playRingSound();
                         buzzerButton.classList.add('buzzer-green');
                     } else if (item.playerName === myName) {
                         buzzerButton.classList.remove('buzzer-green');
@@ -336,8 +330,7 @@
                 status: 'inactive',
                 players: [],
                 countdown: 0,
-                round_id: '',
-                firstPresser: null
+                round_id: ''
             });
 
             roomCodeDisplay.textContent = roomCode;
