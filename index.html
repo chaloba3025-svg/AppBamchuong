@@ -158,10 +158,15 @@
 
         // Lưu tên người chơi một lần duy nhất
         window.onload = () => {
-            myName = prompt("Nhập tên bạn vào nhé:");
-            if (!myName) {
-                alert("Vui lòng nhập tên để chơi!");
-                // Có thể ẩn nút hoặc làm gì đó nếu người dùng không nhập tên
+            // Kiểm tra xem tên đã có trong localStorage chưa
+            const storedName = localStorage.getItem('playerName');
+            if (storedName) {
+                myName = storedName;
+            } else {
+                myName = prompt("Nhập tên bạn vào nhé:");
+                if (myName) {
+                    localStorage.setItem('playerName', myName);
+                }
             }
         };
 
