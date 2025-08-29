@@ -174,7 +174,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script>
-        // Khởi tạo Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAAdt8pjiOTBCFuDEv_1BWZlPQYtJBWdZY",
             authDomain: "appchuong-c3fb8.firebaseapp.com",
@@ -201,26 +200,19 @@
         const countdownDisplay = document.getElementById('countdown-display');
         const countdownDisplayPlayer = document.getElementById('countdown-display-player');
         const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-        const ringSound = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
-
+        
         let isMaster = false;
         let myName = '';
         let currentRoomCode = '';
         let currentRoundId = '';
         let hasPressedThisRound = false;
-        
-        // Hàm phát âm thanh chuông
+
         const playRingSound = () => {
-            // Cần tải lại âm thanh để phát từ đầu
-            ringSound.src = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-            ringSound.load();
-            ringSound.oncanplaythrough = () => {
-                ringSound.play().then(() => {
-                    // Âm thanh đã phát
-                }).catch(e => {
-                    console.error("Không thể phát âm thanh:", e);
-                });
-            };
+            const soundFile = 'https://s3.amazonaws.com/freecodecamp-sound/simonSound1.mp3';
+            const audio = new Audio(soundFile);
+            audio.play().catch(e => {
+                console.error("Không thể phát âm thanh:", e);
+            });
         };
 
         const generateRoomCode = () => {
@@ -230,7 +222,6 @@
         const listenToRoom = (roomCode) => {
             const roomRef = db.collection('rooms').doc(roomCode);
 
-            // Lắng nghe thay đổi của tài liệu phòng (danh sách người chơi, trạng thái)
             roomRef.onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
@@ -238,7 +229,6 @@
                     const status = data.status;
                     const countdown = data.countdown;
                     
-                    // Cập nhật currentRoundId và reset trạng thái bấm nếu vòng chơi mới
                     if (data.round_id !== currentRoundId) {
                         currentRoundId = data.round_id;
                         hasPressedThisRound = false;
@@ -247,7 +237,6 @@
                         }
                     }
 
-                    // Cập nhật danh sách người chơi cho chủ phòng
                     if (isMaster) {
                         playersList.innerHTML = '';
                         players.forEach(player => {
@@ -257,7 +246,6 @@
                         });
                     }
                     
-                    // Hiển thị đếm ngược
                     if (status === 'active' && countdown >= 0) {
                         const display = isMaster ? countdownDisplay : countdownDisplayPlayer;
                         display.textContent = countdown === 0 ? 'BẮT ĐẦU!' : countdown;
@@ -266,7 +254,6 @@
                         countdownDisplayPlayer.classList.add('hidden');
                     }
                     
-                    // Cập nhật trạng thái nút bấm cho người chơi
                     if (!isMaster) {
                         if (status === 'active' && countdown <= 0 && !hasPressedThisRound) {
                             buzzerButton.classList.remove('disabled');
@@ -275,14 +262,12 @@
                         }
                     }
 
-                    // Ẩn đếm ngược khi kết thúc
                     if (status === 'inactive' && isMaster) {
                         countdownDisplay.classList.add('hidden');
                     }
                 }
             });
 
-            // Lắng nghe thay đổi trong subcollection 'presses'
             roomRef.collection('presses').orderBy('pressTime').onSnapshot(async (querySnapshot) => {
                 resultsList.innerHTML = '';
                 const pressTimes = [];
@@ -301,9 +286,7 @@
                     li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${item.pressTime.toLocaleTimeString()}</span>`;
                     resultsList.appendChild(li);
 
-                    // Xử lý âm thanh và màu sắc cho người chiến thắng
                     if (index === 0 && item.playerName === myName) {
-                        // Người chơi này là người chiến thắng, phát âm thanh
                         playRingSound();
                         buzzerButton.classList.add('buzzer-green');
                     } else if (item.playerName === myName) {
@@ -312,7 +295,6 @@
                     }
                 });
 
-                // Nếu có kết quả, chủ phòng hiển thị nút 'Vòng mới'
                 if (isMaster && pressTimes.length > 0) {
                     startButton.classList.add('hidden');
                     newRoundBtn.classList.remove('hidden');
@@ -370,17 +352,13 @@
             await roomRef.update({
                 status: 'active',
                 countdown: 3,
-                round_id: newRoundId,
-                firstPresser: null
+                round_id: newRoundId
             });
 
-            // Reset trạng thái trên máy chủ
             if(!isMaster){
                 buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
             }
 
-
-            // Xóa subcollection `presses`
             const pressesRef = roomRef.collection('presses');
             const snapshot = await pressesRef.get();
             const batch = db.batch();
@@ -406,8 +384,7 @@
             await roomRef.update({
                 status: 'inactive',
                 countdown: -1,
-                round_id: '',
-                firstPresser: null
+                round_id: ''
             });
             startButton.classList.remove('hidden');
             newRoundBtn.classList.add('hidden');
@@ -424,7 +401,6 @@
             const data = doc.data();
             const roundIdOnServer = data.round_id;
 
-            // Kiểm tra trạng thái bấm và round_id của vòng chơi hiện tại
             if (buzzerButton.classList.contains('disabled') || hasPressedThisRound) {
                 alert("Bạn đã bấm rồi hoặc vòng chơi chưa bắt đầu!");
                 return;
@@ -439,9 +415,12 @@
                 hasPressedThisRound = true;
                 buzzerButton.classList.add('buzzer-blue');
 
-                // Chỉ cập nhật `firstPresser` nếu chưa có ai bấm
-                if (!data.firstPresser) {
-                    await roomRef.update({ firstPresser: myName });
+                const pressSnap = await pressCollectionRef.orderBy('pressTime').limit(1).get();
+                if (pressSnap.docs.length > 0) {
+                    const firstPresserName = pressSnap.docs[0].data().playerName;
+                    if (firstPresserName === myName) {
+                        playRingSound();
+                    }
                 }
             } else {
                 alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
