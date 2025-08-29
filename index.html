@@ -354,7 +354,10 @@
                 countdown: 3
             });
             isPressed = false;
-            buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
+            if(!isMaster){
+                buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
+            }
+
 
             // Xóa subcollection `presses`
             const pressesRef = roomRef.collection('presses');
@@ -381,11 +384,15 @@
             const roomRef = db.collection('rooms').doc(currentRoomCode);
             await roomRef.update({
                 status: 'inactive',
-                countdown: 0
+                countdown: -1
             });
             startButton.classList.remove('hidden');
             newRoundBtn.classList.add('hidden');
             resultsPanel.classList.add('hidden');
+            isPressed = false; // Reset trạng thái bấm trên máy chủ
+            if(!isMaster){
+                buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
+            }
         });
 
         buzzerButton.addEventListener('click', async () => {
