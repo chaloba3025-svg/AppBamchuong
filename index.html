@@ -207,6 +207,7 @@
         let myName = '';
         let currentRoomCode = '';
         let currentRoundId = '';
+        let hasPressedThisRound = false;
         
         const generateRoomCode = () => {
             return Math.floor(1000 + Math.random() * 9000).toString();
@@ -223,8 +224,14 @@
                     const status = data.status;
                     const countdown = data.countdown;
                     
-                    // Cập nhật currentRoundId
-                    currentRoundId = data.round_id || '';
+                    // Cập nhật currentRoundId và reset trạng thái bấm nếu vòng chơi mới
+                    if (data.round_id !== currentRoundId) {
+                        currentRoundId = data.round_id;
+                        hasPressedThisRound = false;
+                        if (!isMaster) {
+                            buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
+                        }
+                    }
 
                     // Cập nhật danh sách người chơi cho chủ phòng
                     if (isMaster) {
@@ -247,7 +254,7 @@
                     
                     // Cập nhật trạng thái nút bấm cho người chơi
                     if (!isMaster) {
-                        if (status === 'active' && countdown <= 0) {
+                        if (status === 'active' && countdown <= 0 && !hasPressedThisRound) {
                             buzzerButton.classList.remove('disabled');
                         } else {
                             buzzerButton.classList.add('disabled');
@@ -359,8 +366,7 @@
                 round_id: newRoundId
             });
 
-            // Reset isPressed trên máy chủ
-            isPressed = false;
+            // Reset trạng thái trên máy chủ
             if(!isMaster){
                 buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
             }
@@ -397,7 +403,7 @@
             startButton.classList.remove('hidden');
             newRoundBtn.classList.add('hidden');
             resultsPanel.classList.add('hidden');
-            isPressed = false; // Reset isPressed trên máy chủ
+            
             if(!isMaster){
                 buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
             }
@@ -410,7 +416,7 @@
             const roundIdOnServer = data.round_id;
 
             // Kiểm tra trạng thái bấm và round_id của vòng chơi hiện tại
-            if (buzzerButton.classList.contains('disabled') || isPressed || roundIdOnServer !== currentRoundId) {
+            if (buzzerButton.classList.contains('disabled') || hasPressedThisRound) {
                 alert("Bạn đã bấm rồi hoặc vòng chơi chưa bắt đầu!");
                 return;
             }
@@ -421,7 +427,7 @@
                     playerName: myName,
                     pressTime: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                isPressed = true;
+                hasPressedThisRound = true;
                 buzzerButton.classList.add('buzzer-blue');
             } else {
                 alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
