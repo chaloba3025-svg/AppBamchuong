@@ -208,11 +208,13 @@
         let currentRoomCode = '';
         let currentRoundId = '';
         let hasPressedThisRound = false;
-        
+        let isWinner = false; // Biến mới để theo dõi người chiến thắng
+
         // Hàm phát âm thanh chuông
         const playRingSound = () => {
             let playCount = 0;
             const playSoundInterval = setInterval(() => {
+                ringSound.currentTime = 0; // Đặt lại âm thanh về đầu
                 ringSound.play();
                 playCount++;
                 if (playCount === 3) {
@@ -235,11 +237,13 @@
                     const players = data.players || [];
                     const status = data.status;
                     const countdown = data.countdown;
+                    const firstPresser = data.firstPresser;
                     
                     // Cập nhật currentRoundId và reset trạng thái bấm nếu vòng chơi mới
                     if (data.round_id !== currentRoundId) {
                         currentRoundId = data.round_id;
                         hasPressedThisRound = false;
+                        isWinner = false;
                         if (!isMaster) {
                             buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
                         }
@@ -273,6 +277,12 @@
                         }
                     }
 
+                    // Xử lý âm thanh và màu sắc khi có người bấm chuông đầu tiên
+                    if (firstPresser && firstPresser === myName && !isWinner) {
+                        isWinner = true;
+                        playRingSound();
+                    }
+
                     // Ẩn đếm ngược khi kết thúc
                     if (status === 'inactive' && isMaster) {
                         countdownDisplay.classList.add('hidden');
@@ -299,14 +309,12 @@
                     li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${item.pressTime.toLocaleTimeString()}</span>`;
                     resultsList.appendChild(li);
 
-                    // Xử lý âm thanh và màu sắc cho người chiến thắng
-                    if (index === 0) {
-                        if (item.playerName === myName) {
-                            playRingSound();
-                            buzzerButton.classList.add('buzzer-green');
-                        } else {
-                            buzzerButton.classList.remove('buzzer-green');
-                        }
+                    // Đổi màu nút bấm cho người chiến thắng
+                    if (index === 0 && item.playerName === myName) {
+                        buzzerButton.classList.add('buzzer-green');
+                    } else if (item.playerName === myName) {
+                        buzzerButton.classList.remove('buzzer-green');
+                        buzzerButton.classList.add('buzzer-blue');
                     }
                 });
 
@@ -328,7 +336,8 @@
                 status: 'inactive',
                 players: [],
                 countdown: 0,
-                round_id: ''
+                round_id: '',
+                firstPresser: null
             });
 
             roomCodeDisplay.textContent = roomCode;
@@ -368,7 +377,8 @@
             await roomRef.update({
                 status: 'active',
                 countdown: 3,
-                round_id: newRoundId
+                round_id: newRoundId,
+                firstPresser: null
             });
 
             // Reset trạng thái trên máy chủ
@@ -403,7 +413,8 @@
             await roomRef.update({
                 status: 'inactive',
                 countdown: -1,
-                round_id: ''
+                round_id: '',
+                firstPresser: null
             });
             startButton.classList.remove('hidden');
             newRoundBtn.classList.add('hidden');
@@ -434,6 +445,11 @@
                 });
                 hasPressedThisRound = true;
                 buzzerButton.classList.add('buzzer-blue');
+
+                // Chỉ cập nhật `firstPresser` nếu chưa có ai bấm
+                if (!data.firstPresser) {
+                    await roomRef.update({ firstPresser: myName });
+                }
             } else {
                 alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
             }
