@@ -37,6 +37,7 @@
             border-radius: 8px;
             background-color: #007bff;
             color: white;
+            margin: 5px;
         }
         #buzzer-button {
             width: 150px;
@@ -116,6 +117,7 @@
             <h1>App Bấm Chuông - Giao diện Chủ</h1>
             <div id="control-panel">
                 <button id="startButton">BẮT ĐẦU</button>
+                <button id="resetButton">Reset</button>
             </div>
         </div>
 
@@ -150,6 +152,7 @@
         const db = firebase.firestore();
         
         const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
         const buzzerButton = document.getElementById('buzzer-button');
         const resultsList = document.getElementById('results-list');
         const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
@@ -158,7 +161,6 @@
 
         // Lưu tên người chơi một lần duy nhất
         window.onload = () => {
-            // Kiểm tra xem tên đã có trong localStorage chưa
             const storedName = localStorage.getItem('playerName');
             if (storedName) {
                 myName = storedName;
@@ -178,7 +180,14 @@
             });
             alert('Vòng chơi mới đã bắt đầu!');
             isPressed = false;
-            buzzerButton.style.backgroundColor = '#dc3545'; // Đặt lại màu đỏ khi bắt đầu vòng mới
+            buzzerButton.style.backgroundColor = '#dc3545';
+        });
+
+        // Thêm chức năng cho nút Reset
+        resetButton.addEventListener('click', () => {
+            localStorage.removeItem('playerName');
+            myName = '';
+            alert('Tên người chơi đã được reset. Vui lòng tải lại trang để nhập tên mới.');
         });
 
         buzzerButton.addEventListener('click', async () => {
@@ -207,14 +216,13 @@
                         })
                     });
                     isPressed = true;
-                    buzzerButton.style.backgroundColor = '#007bff'; // Chuyển sang màu xanh dương
+                    buzzerButton.style.backgroundColor = '#007bff';
                 }
             } else {
                 alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
             }
         });
 
-        // Lắng nghe thay đổi từ Firestore để cập nhật giao diện
         const sessionId = new Date().toISOString().split('T')[0];
         const sessionRef = db.collection('game_sessions').doc(sessionId);
 
@@ -223,21 +231,17 @@
                 const data = doc.data();
                 const pressTimes = data.press_times;
                 
-                // Sắp xếp theo thời gian bấm sớm nhất
                 pressTimes.sort((a, b) => a.pressTime - b.pressTime);
                 
-                // Xóa danh sách cũ
                 resultsList.innerHTML = '';
                 
-                // Hiển thị danh sách mới
                 pressTimes.forEach((item, index) => {
                     const li = document.createElement('li');
                     li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${new Date(item.pressTime).toLocaleTimeString()}</span>`;
                     resultsList.appendChild(li);
                     
-                    // Người bấm nhanh nhất kêu chuông và đổi màu nút
                     if (index === 0 && item.playerName === myName) {
-                        buzzerButton.style.backgroundColor = '#28a745'; // Xanh lá
+                        buzzerButton.style.backgroundColor = '#28a745';
                         audio.play();
                     }
                 });
