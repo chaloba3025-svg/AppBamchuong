@@ -49,17 +49,23 @@
         /* Tạo phòng button */
         #createRoomBtn {
             background-color: #28a745;
-            width: 3cm;
-            height: 1cm;
+            width: 150px;
+            height: 50px;
             border-radius: 0;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
         }
         /* Vào phòng button */
         #joinRoomBtn {
             background-color: #007bff;
-            width: 2cm;
-            height: 2cm;
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
-            margin-left: 1cm;
+            margin-left: 10px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
         }
         #countdown-display {
             font-size: 4em;
@@ -231,7 +237,7 @@
                     }
                     
                     // Cập nhật trạng thái nút bấm
-                    if (status === 'active' && countdown === 0 && !isMaster) {
+                    if (status === 'active' && countdown <= 0 && !isMaster) {
                         buzzerButton.classList.remove('disabled');
                     } else {
                         buzzerButton.classList.add('disabled');
