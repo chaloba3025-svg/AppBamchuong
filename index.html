@@ -146,93 +146,97 @@
             appId: "1:794046720932:web:8fe3166394b7e366dbaf31",
             measurementId: "G-1W7BYFTQNX"
         };
-<script>
-    const buzzerButton = document.getElementById('buzzer-button');
-    const resultsList = document.getElementById('results-list');
-    
-    // Giao diện người chơi
-    buzzerButton.addEventListener('click', async () => {
-        const playerName = prompt("Nhập tên bạn vào nhé:");
-        if (!playerName) return; // Nếu người chơi không nhập tên thì không làm gì cả
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        const startButton = document.getElementById('startButton');
+        const buzzerButton = document.getElementById('buzzer-button');
+        const resultsList = document.getElementById('results-list');
+        const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+        let myName = '';
+        let isPressed = false;
 
-        const sessionId = new Date().toISOString().split('T')[0];
-        const playerTime = new Date().getTime();
+        // Lưu tên người chơi một lần duy nhất
+        window.onload = () => {
+            myName = prompt("Nhập tên bạn vào nhé:");
+            if (!myName) {
+                alert("Vui lòng nhập tên để chơi!");
+                // Có thể ẩn nút hoặc làm gì đó nếu người dùng không nhập tên
+            }
+        };
 
-        const sessionRef = db.collection('game_sessions').doc(sessionId);
+        startButton.addEventListener('click', async () => {
+            const sessionId = new Date().toISOString().split('T')[0];
+            await db.collection('game_sessions').doc(sessionId).set({
+                status: 'active',
+                press_times: []
+            });
+            alert('Vòng chơi mới đã bắt đầu!');
+            isPressed = false;
+            buzzerButton.style.backgroundColor = '#dc3545'; // Đặt lại màu đỏ khi bắt đầu vòng mới
+        });
 
-        // Lấy dữ liệu hiện tại của session
-        const doc = await sessionRef.get();
-        if (doc.exists) {
-            const data = doc.data();
-            // Chỉ cho phép bấm khi status là 'active'
-            if (data.status === 'active') {
-                const pressTimes = data.press_times;
-                // Kiểm tra xem người chơi đã bấm chưa
-                const hasPressed = pressTimes.some(item => item.playerName === playerName);
+        buzzerButton.addEventListener('click', async () => {
+            if (!myName) {
+                alert("Vui lòng nhập tên để chơi!");
+                return;
+            }
+            if (isPressed) {
+                alert("Bạn đã bấm rồi!");
+                return;
+            }
+
+            const sessionId = new Date().toISOString().split('T')[0];
+            const sessionRef = db.collection('game_sessions').doc(sessionId);
+
+            const doc = await sessionRef.get();
+            if (doc.exists && doc.data().status === 'active') {
+                const pressTimes = doc.data().press_times || [];
+                const hasPressed = pressTimes.some(item => item.playerName === myName);
 
                 if (!hasPressed) {
                     await sessionRef.update({
                         press_times: firebase.firestore.FieldValue.arrayUnion({
-                            playerName: playerName,
-                            pressTime: playerTime
+                            playerName: myName,
+                            pressTime: new Date().getTime()
                         })
                     });
+                    isPressed = true;
                     buzzerButton.style.backgroundColor = '#007bff'; // Chuyển sang màu xanh dương
                 }
             } else {
                 alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
             }
-        }
-    });
+        });
 
-    // Lắng nghe thay đổi từ Firestore để cập nhật giao diện
-    const sessionId = new Date().toISOString().split('T')[0];
-    const sessionRef = db.collection('game_sessions').doc(sessionId);
+        // Lắng nghe thay đổi từ Firestore để cập nhật giao diện
+        const sessionId = new Date().toISOString().split('T')[0];
+        const sessionRef = db.collection('game_sessions').doc(sessionId);
 
-    sessionRef.onSnapshot((doc) => {
-        if (doc.exists) {
-            const data = doc.data();
-            const pressTimes = data.press_times;
-            
-            // Sắp xếp theo thời gian bấm sớm nhất
-            pressTimes.sort((a, b) => a.pressTime - b.pressTime);
-            
-            // Xóa danh sách cũ
-            resultsList.innerHTML = '';
-            
-            // Hiển thị danh sách mới
-            pressTimes.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${new Date(item.pressTime).toLocaleTimeString()}</span>`;
-                resultsList.appendChild(li);
+        sessionRef.onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                const pressTimes = data.press_times;
                 
-                // Người bấm nhanh nhất kêu chuông và đổi màu nút
-                if (index === 0 && item.playerName === prompt("Nhập tên bạn vào nhé:")) { // Lỗi ở đây: prompt sẽ hiện ra 2 lần
-                    buzzerButton.style.backgroundColor = '#28a745'; // Xanh lá
-                    // Phát chuông
-                    const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
-                    audio.play();
-                }
-            });
-        }
-    });
-</script>
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        const startButton = document.getElementById('startButton');
-
-        startButton.addEventListener('click', async () => {
-            // Tên session là ngày tháng năm để dễ quản lý
-            const sessionId = new Date().toISOString().split('T')[0];
-            
-            // Tạo một document mới trên Firestore để bắt đầu vòng chơi
-            await db.collection('game_sessions').doc(sessionId).set({
-                status: 'active',
-                press_times: [] // Dùng mảng rỗng để lưu thời gian bấm
-            });
-            
-            alert('Vòng chơi mới đã bắt đầu!');
+                // Sắp xếp theo thời gian bấm sớm nhất
+                pressTimes.sort((a, b) => a.pressTime - b.pressTime);
+                
+                // Xóa danh sách cũ
+                resultsList.innerHTML = '';
+                
+                // Hiển thị danh sách mới
+                pressTimes.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${new Date(item.pressTime).toLocaleTimeString()}</span>`;
+                    resultsList.appendChild(li);
+                    
+                    // Người bấm nhanh nhất kêu chuông và đổi màu nút
+                    if (index === 0 && item.playerName === myName) {
+                        buzzerButton.style.backgroundColor = '#28a745'; // Xanh lá
+                        audio.play();
+                    }
+                });
+            }
         });
     </script>
 </body>
