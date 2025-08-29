@@ -55,8 +55,8 @@
         /* Tạo phòng button */
         #createRoomBtn {
             background-color: #28a745;
-            width: 94px; /* Tương đương 2.5cm */
-            height: 94px; /* Tương đương 2.5cm */
+            width: 150px;
+            height: 150px;
             border-radius: 0;
             font-size: 1.5em;
             font-weight: bold;
@@ -357,7 +357,9 @@
                 countdown: -1
             });
             
+            // Đảm bảo mã phòng được hiển thị trên màn hình chủ
             roomCodeDisplay.textContent = roomCode;
+
             startView.classList.add('hidden');
             masterView.classList.remove('hidden');
             resultsPanel.classList.remove('hidden');
