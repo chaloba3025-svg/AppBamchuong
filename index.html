@@ -50,7 +50,7 @@
             height: 150px;
             border-radius: 50%;
             border: 4px solid #fff;
-            background-color: #dc3545; /* Đỏ */
+            background-color: #dc3545;
             color: white;
             font-size: 1.5em;
             font-weight: bold;
@@ -64,15 +64,16 @@
         #buzzer-button.disabled {
             background-color: #ccc !important;
             cursor: not-allowed;
+            opacity: 0.7;
         }
         #buzzer-button.disabled:hover {
             opacity: 1;
         }
         .buzzer-blue {
-            background-color: #007bff !important; /* Xanh dương */
+            background-color: #007bff !important;
         }
         .buzzer-green {
-            background-color: #28a745 !important; /* Xanh lá */
+            background-color: #28a745 !important;
         }
         #results-panel {
             width: 100%;
@@ -109,11 +110,43 @@
         .player-time {
             color: #888;
         }
-        /* Các lớp CSS để ẩn/hiện giao diện */
         .hidden {
             display: none;
         }
-        /* Media query cho màn hình nhỏ */
+        #homeButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #homeButton::before {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 25px;
+            border: 3px solid #dc3545;
+            border-top: none;
+            border-radius: 5px 5px 0 0;
+        }
+        #homeButton::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            width: 0;
+            height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-bottom: 15px solid #dc3545;
+        }
         @media (max-width: 480px) {
             h1 {
                 font-size: 1.5em;
@@ -131,39 +164,38 @@
 </head>
 <body>
     <div id="main-container">
+        <div id="homeButton" class="hidden"></div>
+        
         <div id="start-view">
             <h1>App Bấm Chuông</h1>
-            <button id="createRoomBtn">TẠO PHÒNG</button>
-            <button id="joinRoomBtn">VÀO PHÒNG</button>
+            <button id="createRoomBtn">TẠO</button>
+            <button id="joinRoomBtn">VÀO</button>
         </div>
 
         <div id="master-view" class="hidden">
-            <h1>Mã phòng của bạn là: <span id="roomCodeDisplay"></span></h1>
+            <h1>Mã phòng: <span id="roomCodeDisplay"></span></h1>
             <div id="control-panel">
-                <button id="startButton">BẮT ĐẦU</button>
+                <button id="playButton">PLAY</button>
             </div>
             <div id="countdown-display" class="hidden"></div>
         </div>
 
         <div id="player-view" class="hidden">
-            <h1>Bạn hãy bấm nút!</h1>
+            <h1>Sẵn sàng!</h1>
             <div id="buzzer-button">
                 BẤM
             </div>
-            <div id="countdown-display-player" class="hidden"></div>
         </div>
 
         <div id="results-panel" class="hidden">
             <h2>Kết quả:</h2>
-            <ul id="results-list">
-                </ul>
+            <ul id="results-list"></ul>
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script>
-        // Khởi tạo Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAAdt8pjiOTBCFuDEv_1BWZlPQYtJBWdZY",
             authDomain: "appchuong-c3fb8.firebaseapp.com",
@@ -178,178 +210,4 @@
         
         const createRoomBtn = document.getElementById('createRoomBtn');
         const joinRoomBtn = document.getElementById('joinRoomBtn');
-        const startView = document.getElementById('start-view');
-        const masterView = document.getElementById('master-view');
-        const playerView = document.getElementById('player-view');
-        const resultsPanel = document.getElementById('results-panel');
-        const startButton = document.getElementById('startButton');
-        const buzzerButton = document.getElementById('buzzer-button');
-        const resultsList = document.getElementById('results-list');
-        const countdownDisplay = document.getElementById('countdown-display');
-        const countdownDisplayPlayer = document.getElementById('countdown-display-player');
-        const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-        const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
-
-        let isMaster = false;
-        let myName = '';
-        let currentRoomCode = '';
-        let isPressed = false;
-
-        // Hàm tạo mã phòng ngẫu nhiên 4 chữ số
-        const generateRoomCode = () => {
-            return Math.floor(1000 + Math.random() * 9000).toString();
-        };
-
-        // Hàm lắng nghe sự thay đổi của phòng
-        const listenToRoom = (roomCode) => {
-            const roomRef = db.collection('rooms').doc(roomCode);
-            roomRef.onSnapshot((doc) => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    const pressTimes = data.press_times || [];
-                    const status = data.status;
-
-                    if (status === 'active' && data.countdown > 0) {
-                        countdownDisplayPlayer.textContent = data.countdown;
-                        countdownDisplayPlayer.classList.remove('hidden');
-                    } else {
-                        countdownDisplayPlayer.classList.add('hidden');
-                    }
-                    
-                    // Cập nhật trạng thái nút bấm
-                    if (status === 'active' && data.countdown === 0 && !isMaster) {
-                        buzzerButton.classList.remove('disabled');
-                    } else {
-                        buzzerButton.classList.add('disabled');
-                    }
-                    
-                    // Sắp xếp theo thời gian bấm sớm nhất
-                    pressTimes.sort((a, b) => a.pressTime - b.pressTime);
-                    
-                    // Xóa danh sách cũ
-                    resultsList.innerHTML = '';
-                    
-                    // Hiển thị danh sách mới
-                    pressTimes.forEach((item, index) => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${new Date(item.pressTime).toLocaleTimeString()}</span>`;
-                        resultsList.appendChild(li);
-                        
-                        if (index === 0 && item.playerName === myName) {
-                            buzzerButton.style.backgroundColor = '#28a745';
-                            audio.play();
-                        }
-                    });
-                }
-            });
-        };
-
-        // Bấm nút TẠO PHÒNG
-        createRoomBtn.addEventListener('click', async () => {
-            isMaster = true;
-            const roomCode = generateRoomCode();
-            currentRoomCode = roomCode;
-            
-            // Tạo một document mới trên Firestore để bắt đầu vòng chơi
-            await db.collection('rooms').doc(roomCode).set({
-                status: 'inactive',
-                press_times: [],
-                countdown: 0
-            });
-            
-            roomCodeDisplay.textContent = roomCode;
-            startView.classList.add('hidden');
-            masterView.classList.remove('hidden');
-            resultsPanel.classList.remove('hidden');
-            listenToRoom(roomCode);
-        });
-
-        // Bấm nút VÀO PHÒNG
-        joinRoomBtn.addEventListener('click', () => {
-            const roomCode = prompt("Nhập mã phòng 4 chữ số:");
-            if (!roomCode || roomCode.length !== 4) {
-                alert("Mã phòng không hợp lệ!");
-                return;
-            }
-            myName = prompt("Nhập tên bạn vào nhé:");
-            if (!myName) {
-                alert("Vui lòng nhập tên để chơi!");
-                return;
-            }
-            
-            currentRoomCode = roomCode;
-            startView.classList.add('hidden');
-            playerView.classList.remove('hidden');
-            resultsPanel.classList.remove('hidden');
-            listenToRoom(roomCode);
-        });
-
-        // Nút BẮT ĐẦU trên máy chủ
-        startButton.addEventListener('click', async () => {
-            const roomRef = db.collection('rooms').doc(currentRoomCode);
-            await roomRef.update({
-                status: 'active',
-                press_times: [] // Reset danh sách
-            });
-            isPressed = false;
-            buzzerButton.style.backgroundColor = '#dc3545'; // Đặt lại màu đỏ
-
-            let countdown = 3;
-            countdownDisplay.textContent = countdown;
-            countdownDisplay.classList.remove('hidden');
-
-            const countdownInterval = setInterval(async () => {
-                countdown--;
-                countdownDisplay.textContent = countdown;
-                if (countdown === 0) {
-                    countdownDisplay.textContent = 'HẾT!';
-                }
-                
-                // Cập nhật số đếm ngược lên Firestore
-                await roomRef.update({ countdown: countdown });
-
-                if (countdown < 0) {
-                    clearInterval(countdownInterval);
-                    countdownDisplay.classList.add('hidden');
-                    // Kết thúc đếm ngược, cho phép bấm
-                    await roomRef.update({ countdown: 0 });
-                }
-            }, 1000);
-        });
-
-        // Nút BẤM của người chơi
-        buzzerButton.addEventListener('click', async () => {
-            if (buzzerButton.classList.contains('disabled')) {
-                alert("Vòng chơi chưa bắt đầu!");
-                return;
-            }
-            if (isPressed) {
-                alert("Bạn đã bấm rồi!");
-                return;
-            }
-
-            const roomRef = db.collection('rooms').doc(currentRoomCode);
-            const doc = await roomRef.get();
-            const data = doc.data();
-
-            if (doc.exists && data.status === 'active' && data.countdown === 0) {
-                const pressTimes = data.press_times || [];
-                const hasPressed = pressTimes.some(item => item.playerName === myName);
-
-                if (!hasPressed) {
-                    await roomRef.update({
-                        press_times: firebase.firestore.FieldValue.arrayUnion({
-                            playerName: myName,
-                            pressTime: new Date().getTime()
-                        })
-                    });
-                    isPressed = true;
-                    buzzerButton.style.backgroundColor = '#007bff';
-                }
-            } else {
-                alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
-            }
-        });
-    </script>
-</body>
-</html>
+        const startView =
