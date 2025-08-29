@@ -46,15 +46,22 @@
             color: white;
             margin: 5px;
         }
+        /* Giao diện chọn chức năng theo cột dọc */
+        #start-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         /* Tạo phòng button */
         #createRoomBtn {
             background-color: #28a745;
-            width: 75px; /* Tương đương 2cm */
-            height: 75px; /* Tương đương 2cm */
+            width: 94px; /* Tương đương 2.5cm */
+            height: 94px; /* Tương đương 2.5cm */
             border-radius: 0;
             font-size: 1.5em;
             font-weight: bold;
             color: white;
+            margin-bottom: 20px;
         }
         /* Vào phòng button */
         #joinRoomBtn {
@@ -62,7 +69,6 @@
             width: 150px;
             height: 150px;
             border-radius: 50%;
-            margin-left: 10px;
             font-size: 1.5em;
             font-weight: bold;
             color: white;
@@ -135,6 +141,42 @@
         .player-time {
             color: #888;
         }
+        /* Nút quay về trang chủ */
+        #homeButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #homeButton::before {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 25px;
+            border: 3px solid #dc3545;
+            border-top: none;
+            border-radius: 5px 5px 0 0;
+        }
+        #homeButton::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            width: 0;
+            height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-bottom: 15px solid #dc3545;
+        }
+
         /* Các lớp CSS để ẩn/hiện giao diện */
         .hidden {
             display: none;
@@ -143,6 +185,8 @@
 </head>
 <body>
     <div id="main-container">
+        <div id="homeButton" class="hidden"></div>
+        
         <div id="app-title">
             <h1>APP BẤM CHUÔNG</h1>
         </div>
@@ -165,7 +209,6 @@
             <div id="buzzer-button">
                 BẤM
             </div>
-            <div id="countdown-display-player" class="hidden"></div>
         </div>
 
         <div id="results-panel" class="hidden">
@@ -203,10 +246,11 @@
         const countdownDisplay = document.getElementById('countdown-display');
         const countdownDisplayPlayer = document.getElementById('countdown-display-player');
         const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+        const homeButton = document.getElementById('homeButton');
         
         const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
         let audioPlayCount = 0;
-        let audioInterval;
+        let roomListenerUnsubscribe;
 
         let isMaster = false;
         let myName = '';
@@ -221,7 +265,7 @@
         // Hàm lắng nghe sự thay đổi của phòng
         const listenToRoom = (roomCode) => {
             const roomRef = db.collection('rooms').doc(roomCode.toString());
-            roomRef.onSnapshot((doc) => {
+            roomListenerUnsubscribe = roomRef.onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
                     const pressTimes = data.press_times || [];
@@ -280,6 +324,27 @@
             });
         };
 
+        // Hàm reset về màn hình ban đầu
+        const resetToStartView = () => {
+            if (roomListenerUnsubscribe) {
+                roomListenerUnsubscribe();
+            }
+            isMaster = false;
+            myName = '';
+            currentRoomCode = '';
+            isPressed = false;
+            audio.pause();
+            audio.currentTime = 0;
+            audioPlayCount = 0;
+            
+            masterView.classList.add('hidden');
+            playerView.classList.add('hidden');
+            resultsPanel.classList.add('hidden');
+            homeButton.classList.add('hidden');
+            startView.classList.remove('hidden');
+            resultsList.innerHTML = '';
+        };
+
         // Bấm nút TẠO PHÒNG
         createRoomBtn.addEventListener('click', async () => {
             isMaster = true;
@@ -296,6 +361,7 @@
             startView.classList.add('hidden');
             masterView.classList.remove('hidden');
             resultsPanel.classList.remove('hidden');
+            homeButton.classList.remove('hidden');
             listenToRoom(roomCode);
         });
 
@@ -316,6 +382,7 @@
             startView.classList.add('hidden');
             playerView.classList.remove('hidden');
             resultsPanel.classList.remove('hidden');
+            homeButton.classList.remove('hidden');
             listenToRoom(roomCode);
         });
 
@@ -340,7 +407,7 @@
 
             isPressed = false;
             buzzerButton.style.backgroundColor = '#dc3545';
-            audio.pause(); // Đảm bảo âm thanh dừng nếu đang phát
+            audio.pause();
             audio.currentTime = 0;
         });
 
@@ -377,6 +444,9 @@
                 alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
             }
         });
+
+        // Thêm sự kiện click cho nút Home
+        homeButton.addEventListener('click', resetToStartView);
     </script>
 </body>
 </html>
