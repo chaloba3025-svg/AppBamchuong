@@ -206,8 +206,8 @@
         let isMaster = false;
         let myName = '';
         let currentRoomCode = '';
-        let isPressed = false;
-
+        let currentRoundId = '';
+        
         const generateRoomCode = () => {
             return Math.floor(1000 + Math.random() * 9000).toString();
         };
@@ -222,6 +222,9 @@
                     const players = data.players || [];
                     const status = data.status;
                     const countdown = data.countdown;
+                    
+                    // Cập nhật currentRoundId
+                    currentRoundId = data.round_id || '';
 
                     // Cập nhật danh sách người chơi cho chủ phòng
                     if (isMaster) {
@@ -279,7 +282,6 @@
 
                     if (index === 0) {
                         if (isMaster) {
-                           // Chủ phòng chỉ cập nhật màu sắc
                            buzzerButton.style.backgroundColor = '#28a745';
                         }
                         if (item.playerName === myName) {
@@ -313,7 +315,8 @@
             await db.collection('rooms').doc(roomCode).set({
                 status: 'inactive',
                 players: [],
-                countdown: 0
+                countdown: 0,
+                round_id: ''
             });
 
             roomCodeDisplay.textContent = roomCode;
@@ -349,10 +352,14 @@
 
         startButton.addEventListener('click', async () => {
             const roomRef = db.collection('rooms').doc(currentRoomCode);
+            const newRoundId = new Date().getTime().toString();
             await roomRef.update({
                 status: 'active',
-                countdown: 3
+                countdown: 3,
+                round_id: newRoundId
             });
+
+            // Reset isPressed trên máy chủ
             isPressed = false;
             if(!isMaster){
                 buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
@@ -384,26 +391,29 @@
             const roomRef = db.collection('rooms').doc(currentRoomCode);
             await roomRef.update({
                 status: 'inactive',
-                countdown: -1
+                countdown: -1,
+                round_id: ''
             });
             startButton.classList.remove('hidden');
             newRoundBtn.classList.add('hidden');
             resultsPanel.classList.add('hidden');
-            isPressed = false; // Reset trạng thái bấm trên máy chủ
+            isPressed = false; // Reset isPressed trên máy chủ
             if(!isMaster){
                 buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
             }
         });
 
         buzzerButton.addEventListener('click', async () => {
-            if (buzzerButton.classList.contains('disabled') || isPressed) {
-                alert("Bạn đã bấm rồi hoặc vòng chơi chưa bắt đầu!");
-                return;
-            }
-
             const roomRef = db.collection('rooms').doc(currentRoomCode);
             const doc = await roomRef.get();
             const data = doc.data();
+            const roundIdOnServer = data.round_id;
+
+            // Kiểm tra trạng thái bấm và round_id của vòng chơi hiện tại
+            if (buzzerButton.classList.contains('disabled') || isPressed || roundIdOnServer !== currentRoundId) {
+                alert("Bạn đã bấm rồi hoặc vòng chơi chưa bắt đầu!");
+                return;
+            }
 
             if (doc.exists && data.status === 'active' && data.countdown <= 0) {
                 const pressCollectionRef = roomRef.collection('presses');
