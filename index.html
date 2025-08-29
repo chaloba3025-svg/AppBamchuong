@@ -192,8 +192,8 @@
         </div>
 
         <div id="start-view">
-            <button id="createRoomBtn">TẠO PHÒNG</button>
-            <button id="joinRoomBtn">VÀO PHÒNG</button>
+            <button id="createRoomBtn">TẠO</button>
+            <button id="joinRoomBtn">VÀO</button>
         </div>
 
         <div id="master-view" class="hidden">
@@ -265,9 +265,20 @@
         // Hàm lắng nghe sự thay đổi của phòng
         const listenToRoom = (roomCode) => {
             const roomRef = db.collection('rooms').doc(roomCode.toString());
-            roomListenerUnsubscribe = roomRef.onSnapshot((doc) => {
+            roomListenerUnsubscribe = roomRef.onSnapshot(async (doc) => {
                 if (doc.exists) {
                     const data = doc.data();
+
+                    // Kiểm tra nếu có lệnh reset từ máy chủ
+                    if (data.reset) {
+                        // Nếu là máy chủ, đặt lại cờ reset để không bị lặp vô hạn
+                        if (isMaster) {
+                            await roomRef.update({ reset: false });
+                        }
+                        resetToStartView();
+                        return;
+                    }
+
                     const pressTimes = data.press_times || [];
                     const status = data.status;
                     const countdown = data.countdown;
@@ -345,7 +356,7 @@
             resultsList.innerHTML = '';
         };
 
-        // Bấm nút TẠO PHÒNG
+        // Bấm nút TẠO
         createRoomBtn.addEventListener('click', async () => {
             isMaster = true;
             const roomCode = generateRoomCode();
@@ -354,7 +365,8 @@
             await db.collection('rooms').doc(roomCode.toString()).set({
                 status: 'inactive',
                 press_times: [],
-                countdown: -1
+                countdown: -1,
+                reset: false // Thêm cờ reset
             });
             
             // Đảm bảo mã phòng được hiển thị trên màn hình chủ
@@ -367,7 +379,7 @@
             listenToRoom(roomCode);
         });
 
-        // Bấm nút VÀO PHÒNG
+        // Bấm nút VÀO
         joinRoomBtn.addEventListener('click', () => {
             const roomCode = prompt("NHẬP MÃ:");
             if (!roomCode || isNaN(roomCode) || roomCode.length !== 1) {
@@ -384,7 +396,7 @@
             startView.classList.add('hidden');
             playerView.classList.remove('hidden');
             resultsPanel.classList.remove('hidden');
-            homeButton.classList.remove('hidden');
+            // Home button vẫn hidden
             listenToRoom(roomCode);
         });
 
@@ -449,7 +461,13 @@
         });
 
         // Thêm sự kiện click cho nút Home
-        homeButton.addEventListener('click', resetToStartView);
+        homeButton.addEventListener('click', async () => {
+            if (isMaster) {
+                const roomRef = db.collection('rooms').doc(currentRoomCode.toString());
+                // Gửi lệnh reset đến tất cả các máy
+                await roomRef.update({ reset: true });
+            }
+        });
     </script>
 </body>
 </html>
