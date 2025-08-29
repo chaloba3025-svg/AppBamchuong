@@ -268,7 +268,7 @@
             roomListenerUnsubscribe = roomRef.onSnapshot(async (doc) => {
                 if (doc.exists) {
                     const data = doc.data();
-
+                    
                     // Kiểm tra nếu có lệnh reset từ máy chủ
                     if (data.reset) {
                         // Nếu là máy chủ, đặt lại cờ reset để không bị lặp vô hạn
@@ -366,12 +366,10 @@
                 status: 'inactive',
                 press_times: [],
                 countdown: -1,
-                reset: false // Thêm cờ reset
+                reset: false
             });
             
-            // Đảm bảo mã phòng được hiển thị trên màn hình chủ
             roomCodeDisplay.textContent = roomCode;
-
             startView.classList.add('hidden');
             masterView.classList.remove('hidden');
             resultsPanel.classList.remove('hidden');
@@ -396,14 +394,13 @@
             startView.classList.add('hidden');
             playerView.classList.remove('hidden');
             resultsPanel.classList.remove('hidden');
-            // Home button vẫn hidden
+            homeButton.classList.add('hidden'); // Đảm bảo nút ngôi nhà bị ẩn
             listenToRoom(roomCode);
         });
 
         // Nút PLAY trên máy chủ
         playButton.addEventListener('click', async () => {
             const roomRef = db.collection('rooms').doc(currentRoomCode.toString());
-            // Đặt lại các thông số trước khi bắt đầu vòng chơi mới
             await roomRef.update({
                 status: 'active',
                 press_times: [],
