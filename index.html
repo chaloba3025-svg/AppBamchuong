@@ -209,6 +209,18 @@
         let currentRoundId = '';
         let hasPressedThisRound = false;
         
+        // Hàm phát âm thanh chuông
+        const playRingSound = () => {
+            let playCount = 0;
+            const playSoundInterval = setInterval(() => {
+                ringSound.play();
+                playCount++;
+                if (playCount === 3) {
+                    clearInterval(playSoundInterval);
+                }
+            }, 500);
+        };
+
         const generateRoomCode = () => {
             return Math.floor(1000 + Math.random() * 9000).toString();
         };
@@ -287,20 +299,13 @@
                     li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${item.pressTime.toLocaleTimeString()}</span>`;
                     resultsList.appendChild(li);
 
+                    // Xử lý âm thanh và màu sắc cho người chiến thắng
                     if (index === 0) {
-                        if (isMaster) {
-                           buzzerButton.style.backgroundColor = '#28a745';
-                        }
                         if (item.playerName === myName) {
+                            playRingSound();
                             buzzerButton.classList.add('buzzer-green');
-                            let playCount = 0;
-                            const playSoundInterval = setInterval(() => {
-                                ringSound.play();
-                                playCount++;
-                                if (playCount === 3) {
-                                    clearInterval(playSoundInterval);
-                                }
-                            }, 500);
+                        } else {
+                            buzzerButton.classList.remove('buzzer-green');
                         }
                     }
                 });
