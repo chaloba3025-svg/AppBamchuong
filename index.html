@@ -49,8 +49,8 @@
         /* Tạo phòng button */
         #createRoomBtn {
             background-color: #28a745;
-            width: 150px;
-            height: 50px;
+            width: 75px; /* Tương đương 2cm */
+            height: 75px; /* Tương đương 2cm */
             border-radius: 0;
             font-size: 1.5em;
             font-weight: bold;
@@ -203,7 +203,10 @@
         const countdownDisplay = document.getElementById('countdown-display');
         const countdownDisplayPlayer = document.getElementById('countdown-display-player');
         const roomCodeDisplay = document.getElementById('roomCodeDisplay');
+        
         const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+        let audioPlayCount = 0;
+        let audioInterval;
 
         let isMaster = false;
         let myName = '';
@@ -257,7 +260,20 @@
                         
                         if (index === 0 && item.playerName === myName) {
                             buzzerButton.style.backgroundColor = '#28a745';
-                            audio.play();
+                            // Phát âm thanh 5 lần rồi dừng
+                            if (audioPlayCount < 5) {
+                                if (audio.paused) {
+                                    audio.play();
+                                }
+                                audio.onended = () => {
+                                    audioPlayCount++;
+                                    if (audioPlayCount < 5) {
+                                        audio.play();
+                                    } else {
+                                        audioPlayCount = 0;
+                                    }
+                                };
+                            }
                         }
                     });
                 }
@@ -270,7 +286,6 @@
             const roomCode = generateRoomCode();
             currentRoomCode = roomCode;
             
-            // Tạo một document mới trên Firestore để bắt đầu vòng chơi
             await db.collection('rooms').doc(roomCode.toString()).set({
                 status: 'inactive',
                 press_times: [],
@@ -325,6 +340,8 @@
 
             isPressed = false;
             buzzerButton.style.backgroundColor = '#dc3545';
+            audio.pause(); // Đảm bảo âm thanh dừng nếu đang phát
+            audio.currentTime = 0;
         });
 
         // Nút BẤM của người chơi
