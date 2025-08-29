@@ -391,6 +391,7 @@
         // Nút PLAY trên máy chủ
         playButton.addEventListener('click', async () => {
             const roomRef = db.collection('rooms').doc(currentRoomCode.toString());
+            // Đặt lại các thông số trước khi bắt đầu vòng chơi mới
             await roomRef.update({
                 status: 'active',
                 press_times: [],
