@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Bấm Chuông</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #main-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            font-size: 2em;
+        }
+        #control-panel {
+            margin-bottom: 30px;
+        }
+        #control-panel button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: white;
+        }
+        #buzzer-button {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 4px solid #fff;
+            background-color: #dc3545; /* Đỏ */
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            transition: background-color 0.3s;
+        }
+        .buzzer-blue {
+            background-color: #007bff !important; /* Xanh dương */
+        }
+        .buzzer-green {
+            background-color: #28a745 !important; /* Xanh lá */
+        }
+        #results-panel {
+            width: 100%;
+            max-width: 500px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #results-panel h2 {
+            color: #555;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        #results-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #results-list li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+        }
+        #results-list li:last-child {
+            border-bottom: none;
+        }
+        .player-rank {
+            font-weight: bold;
+        }
+        .player-time {
+            color: #888;
+        }
+        /* Media query cho màn hình nhỏ */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            #control-panel button {
+                padding: 10px 20px;
+                font-size: 1em;
+            }
+            #buzzer-button {
+                width: 120px;
+                height: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <div id="master-view">
+            <h1>App Bấm Chuông - Giao diện Chủ</h1>
+            <div id="control-panel">
+                <button id="startButton">BẮT ĐẦU</button>
+            </div>
+        </div>
+
+        <div id="player-view">
+            <h1>Bạn hãy bấm nút!</h1>
+            <div id="buzzer-button">
+                BẤM
+            </div>
+        </div>
+
+        <div id="results-panel">
+            <h2>Kết quả:</h2>
+            <ul id="results-list">
+                </ul>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script>
+        // Khởi tạo Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAdt8pjiOTBCFuDEv_1BWZlPQYtJBWdZY",
+            authDomain: "appchuong-c3fb8.firebaseapp.com",
+            projectId: "appchuong-c3fb8",
+            storageBucket: "appchuong-c3fb8.firebasestorage.app",
+            messagingSenderId: "794046720932",
+            appId: "1:794046720932:web:8fe3166394b7e366dbaf31",
+            measurementId: "G-1W7BYFTQNX"
+        };
+<script>
+    const buzzerButton = document.getElementById('buzzer-button');
+    const resultsList = document.getElementById('results-list');
+    
+    // Giao diện người chơi
+    buzzerButton.addEventListener('click', async () => {
+        const playerName = prompt("Nhập tên bạn vào nhé:");
+        if (!playerName) return; // Nếu người chơi không nhập tên thì không làm gì cả
+
+        const sessionId = new Date().toISOString().split('T')[0];
+        const playerTime = new Date().getTime();
+
+        const sessionRef = db.collection('game_sessions').doc(sessionId);
+
+        // Lấy dữ liệu hiện tại của session
+        const doc = await sessionRef.get();
+        if (doc.exists) {
+            const data = doc.data();
+            // Chỉ cho phép bấm khi status là 'active'
+            if (data.status === 'active') {
+                const pressTimes = data.press_times;
+                // Kiểm tra xem người chơi đã bấm chưa
+                const hasPressed = pressTimes.some(item => item.playerName === playerName);
+
+                if (!hasPressed) {
+                    await sessionRef.update({
+                        press_times: firebase.firestore.FieldValue.arrayUnion({
+                            playerName: playerName,
+                            pressTime: playerTime
+                        })
+                    });
+                    buzzerButton.style.backgroundColor = '#007bff'; // Chuyển sang màu xanh dương
+                }
+            } else {
+                alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
+            }
+        }
+    });
+
+    // Lắng nghe thay đổi từ Firestore để cập nhật giao diện
+    const sessionId = new Date().toISOString().split('T')[0];
+    const sessionRef = db.collection('game_sessions').doc(sessionId);
+
+    sessionRef.onSnapshot((doc) => {
+        if (doc.exists) {
+            const data = doc.data();
+            const pressTimes = data.press_times;
+            
+            // Sắp xếp theo thời gian bấm sớm nhất
+            pressTimes.sort((a, b) => a.pressTime - b.pressTime);
+            
+            // Xóa danh sách cũ
+            resultsList.innerHTML = '';
+            
+            // Hiển thị danh sách mới
+            pressTimes.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${new Date(item.pressTime).toLocaleTimeString()}</span>`;
+                resultsList.appendChild(li);
+                
+                // Người bấm nhanh nhất kêu chuông và đổi màu nút
+                if (index === 0 && item.playerName === prompt("Nhập tên bạn vào nhé:")) { // Lỗi ở đây: prompt sẽ hiện ra 2 lần
+                    buzzerButton.style.backgroundColor = '#28a745'; // Xanh lá
+                    // Phát chuông
+                    const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+                    audio.play();
+                }
+            });
+        }
+    });
+</script>
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const startButton = document.getElementById('startButton');
+
+        startButton.addEventListener('click', async () => {
+            // Tên session là ngày tháng năm để dễ quản lý
+            const sessionId = new Date().toISOString().split('T')[0];
+            
+            // Tạo một document mới trên Firestore để bắt đầu vòng chơi
+            await db.collection('game_sessions').doc(sessionId).set({
+                status: 'active',
+                press_times: [] // Dùng mảng rỗng để lưu thời gian bấm
+            });
+            
+            alert('Vòng chơi mới đã bắt đầu!');
+        });
+    </script>
+</body>
+</html>
