@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App Bấm Chuông</title>
+    <title>APP BẤM CHUÔNG</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -22,13 +22,20 @@
             max-width: 600px;
             padding: 20px;
         }
-        h1 {
-            color: #333;
-            font-size: 2em;
+        /* App Title */
+        #app-title {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px; /* Tương đương 1.5cm x 4cm */
+            border-radius: 5px;
+            margin-bottom: 20px;
         }
-        #control-panel {
-            margin-bottom: 30px;
+        #app-title h1 {
+            font-size: 1.5em; /* Kích thước chữ to hơn */
+            margin: 0;
+            font-weight: bold;
         }
+        /* Buttons */
         #control-panel button {
             padding: 15px 30px;
             font-size: 1.2em;
@@ -38,6 +45,21 @@
             background-color: #007bff;
             color: white;
             margin: 5px;
+        }
+        /* Tạo phòng button */
+        #createRoomBtn {
+            background-color: #28a745;
+            width: 3cm;
+            height: 1cm;
+            border-radius: 0;
+        }
+        /* Vào phòng button */
+        #joinRoomBtn {
+            background-color: #007bff;
+            width: 2cm;
+            height: 2cm;
+            border-radius: 50%;
+            margin-left: 1cm;
         }
         #countdown-display {
             font-size: 4em;
@@ -64,9 +86,7 @@
         #buzzer-button.disabled {
             background-color: #ccc !important;
             cursor: not-allowed;
-        }
-        #buzzer-button.disabled:hover {
-            opacity: 1;
+            opacity: 0.7;
         }
         .buzzer-blue {
             background-color: #007bff !important; /* Xanh dương */
@@ -113,40 +133,29 @@
         .hidden {
             display: none;
         }
-        /* Media query cho màn hình nhỏ */
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 1.5em;
-            }
-            #control-panel button {
-                padding: 10px 20px;
-                font-size: 1em;
-            }
-            #buzzer-button {
-                width: 120px;
-                height: 120px;
-            }
-        }
     </style>
 </head>
 <body>
     <div id="main-container">
+        <div id="app-title">
+            <h1>APP BẤM CHUÔNG</h1>
+        </div>
+
         <div id="start-view">
-            <h1>App Bấm Chuông</h1>
             <button id="createRoomBtn">TẠO PHÒNG</button>
             <button id="joinRoomBtn">VÀO PHÒNG</button>
         </div>
 
         <div id="master-view" class="hidden">
-            <h1>Mã phòng của bạn là: <span id="roomCodeDisplay"></span></h1>
+            <h1>Mã phòng: <span id="roomCodeDisplay"></span></h1>
             <div id="control-panel">
-                <button id="startButton">BẮT ĐẦU</button>
+                <button id="playButton">PLAY</button>
             </div>
             <div id="countdown-display" class="hidden"></div>
         </div>
 
         <div id="player-view" class="hidden">
-            <h1>Bạn hãy bấm nút!</h1>
+            <h1>Sẵn sàng!</h1>
             <div id="buzzer-button">
                 BẤM
             </div>
@@ -182,7 +191,7 @@
         const masterView = document.getElementById('master-view');
         const playerView = document.getElementById('player-view');
         const resultsPanel = document.getElementById('results-panel');
-        const startButton = document.getElementById('startButton');
+        const playButton = document.getElementById('playButton');
         const buzzerButton = document.getElementById('buzzer-button');
         const resultsList = document.getElementById('results-list');
         const countdownDisplay = document.getElementById('countdown-display');
@@ -194,30 +203,38 @@
         let myName = '';
         let currentRoomCode = '';
         let isPressed = false;
+        let isCountdownFinished = false;
 
-        // Hàm tạo mã phòng ngẫu nhiên 4 chữ số
+        // Hàm tạo mã phòng ngẫu nhiên 1 chữ số
         const generateRoomCode = () => {
-            return Math.floor(1000 + Math.random() * 9000).toString();
+            return Math.floor(Math.random() * 9) + 1;
         };
 
         // Hàm lắng nghe sự thay đổi của phòng
         const listenToRoom = (roomCode) => {
-            const roomRef = db.collection('rooms').doc(roomCode);
+            const roomRef = db.collection('rooms').doc(roomCode.toString());
             roomRef.onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
                     const pressTimes = data.press_times || [];
                     const status = data.status;
+                    const countdown = data.countdown;
 
-                    if (status === 'active' && data.countdown > 0) {
-                        countdownDisplayPlayer.textContent = data.countdown;
+                    if (countdown > 0) {
+                        countdownDisplay.textContent = countdown;
+                        countdownDisplayPlayer.textContent = countdown;
+                        countdownDisplay.classList.remove('hidden');
                         countdownDisplayPlayer.classList.remove('hidden');
+                    } else if (countdown === 0) {
+                        countdownDisplay.textContent = 'HẾT!';
+                        countdownDisplayPlayer.textContent = 'HẾT!';
                     } else {
+                        countdownDisplay.classList.add('hidden');
                         countdownDisplayPlayer.classList.add('hidden');
                     }
                     
                     // Cập nhật trạng thái nút bấm
-                    if (status === 'active' && data.countdown === 0 && !isMaster) {
+                    if (status === 'active' && countdown < 0 && !isMaster) {
                         buzzerButton.classList.remove('disabled');
                     } else {
                         buzzerButton.classList.add('disabled');
@@ -251,10 +268,10 @@
             currentRoomCode = roomCode;
             
             // Tạo một document mới trên Firestore để bắt đầu vòng chơi
-            await db.collection('rooms').doc(roomCode).set({
+            await db.collection('rooms').doc(roomCode.toString()).set({
                 status: 'inactive',
                 press_times: [],
-                countdown: 0
+                countdown: -1
             });
             
             roomCodeDisplay.textContent = roomCode;
@@ -266,12 +283,12 @@
 
         // Bấm nút VÀO PHÒNG
         joinRoomBtn.addEventListener('click', () => {
-            const roomCode = prompt("Nhập mã phòng 4 chữ số:");
-            if (!roomCode || roomCode.length !== 4) {
-                alert("Mã phòng không hợp lệ!");
+            const roomCode = prompt("NHẬP MÃ:");
+            if (!roomCode || isNaN(roomCode) || roomCode.length !== 1) {
+                alert("Mã phòng không hợp lệ! Vui lòng nhập một chữ số.");
                 return;
             }
-            myName = prompt("Nhập tên bạn vào nhé:");
+            myName = prompt("NHẬP TÊN:");
             if (!myName) {
                 alert("Vui lòng nhập tên để chơi!");
                 return;
@@ -284,37 +301,16 @@
             listenToRoom(roomCode);
         });
 
-        // Nút BẮT ĐẦU trên máy chủ
-        startButton.addEventListener('click', async () => {
-            const roomRef = db.collection('rooms').doc(currentRoomCode);
+        // Nút PLAY trên máy chủ
+        playButton.addEventListener('click', async () => {
+            const roomRef = db.collection('rooms').doc(currentRoomCode.toString());
             await roomRef.update({
                 status: 'active',
-                press_times: [] // Reset danh sách
+                press_times: [], // Reset danh sách
+                countdown: 3
             });
             isPressed = false;
             buzzerButton.style.backgroundColor = '#dc3545'; // Đặt lại màu đỏ
-
-            let countdown = 3;
-            countdownDisplay.textContent = countdown;
-            countdownDisplay.classList.remove('hidden');
-
-            const countdownInterval = setInterval(async () => {
-                countdown--;
-                countdownDisplay.textContent = countdown;
-                if (countdown === 0) {
-                    countdownDisplay.textContent = 'HẾT!';
-                }
-                
-                // Cập nhật số đếm ngược lên Firestore
-                await roomRef.update({ countdown: countdown });
-
-                if (countdown < 0) {
-                    clearInterval(countdownInterval);
-                    countdownDisplay.classList.add('hidden');
-                    // Kết thúc đếm ngược, cho phép bấm
-                    await roomRef.update({ countdown: 0 });
-                }
-            }, 1000);
         });
 
         // Nút BẤM của người chơi
@@ -328,11 +324,11 @@
                 return;
             }
 
-            const roomRef = db.collection('rooms').doc(currentRoomCode);
+            const roomRef = db.collection('rooms').doc(currentRoomCode.toString());
             const doc = await roomRef.get();
             const data = doc.data();
 
-            if (doc.exists && data.status === 'active' && data.countdown === 0) {
+            if (doc.exists && data.status === 'active' && data.countdown < 0) {
                 const pressTimes = data.press_times || [];
                 const hasPressed = pressTimes.some(item => item.playerName === myName);
 
@@ -348,6 +344,18 @@
                 }
             } else {
                 alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
+            }
+        });
+
+        // Chức năng đếm ngược
+        db.collection('rooms').doc(currentRoomCode.toString()).onSnapshot(async (doc) => {
+            if (doc.exists) {
+                const countdown = doc.data().countdown;
+                if (countdown > 0) {
+                    setTimeout(async () => {
+                        await db.collection('rooms').doc(currentRoomCode.toString()).update({ countdown: countdown - 1 });
+                    }, 1000);
+                }
             }
         });
     </script>
