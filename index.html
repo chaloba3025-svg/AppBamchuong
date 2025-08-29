@@ -207,8 +207,10 @@
         let currentRoundId = '';
         let hasPressedThisRound = false;
 
+        const ringSound = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+
         const playRingSound = () => {
-            const soundFile = 'https://s3.amazonaws.com/freecodecamp-sound/simonSound1.mp3';
+            const soundFile = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
             const audio = new Audio(soundFile);
             audio.play().catch(e => {
                 console.error("Không thể phát âm thanh:", e);
