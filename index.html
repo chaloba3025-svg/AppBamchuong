@@ -330,14 +330,14 @@
 
 <body>
     <div id="main-container">
-        <div id="start-view">
+        <div id="start-view" class="hidden">
             <h1>APP BẤM CHUÔNG</h1>
             <button id="createRoomBtn">TẠO PHÒNG</button>
             <button id="joinRoomBtn">VÀO PHÒNG</button>
         </div>
 
         <div id="recovery-view" class="input-view hidden">
-            <h1>Bạn có muốn quay lại phòng cũ không?</h1>
+            <h1>APP BẤM CHUÔNG</h1>
             <button id="returnToOldRoomBtn">ROOM CŨ</button>
             <button id="returnToHomeBtn">HOME</button>
         </div>
@@ -534,9 +534,17 @@
             const savedIsMaster = localStorage.getItem('isMaster');
             const savedRoomCode = localStorage.getItem('currentRoomCode');
             
+            // Ẩn tất cả các màn hình
+            document.querySelectorAll('#main-container > div').forEach(div => {
+                div.classList.add('hidden');
+            });
+
             if (savedIsMaster === 'true' && savedRoomCode) {
-                startView.classList.add('hidden');
+                // Nếu là master và có phòng đã lưu, hiển thị màn hình khôi phục
                 recoveryView.classList.remove('hidden');
+            } else {
+                // Nếu không, hiển thị màn hình bắt đầu
+                startView.classList.remove('hidden');
             }
         };
 
