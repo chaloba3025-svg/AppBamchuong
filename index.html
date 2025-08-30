@@ -289,6 +289,12 @@
             <button id="joinRoomBtn">VÀO PHÒNG</button>
         </div>
 
+        <div id="recovery-view" class="input-view hidden">
+            <h1>Bạn có muốn quay lại phòng cũ không?</h1>
+            <button id="returnToOldRoomBtn">QUAY LẠI PHÒNG CŨ</button>
+            <button id="returnToHomeBtn">VỀ TRANG CHỦ</button>
+        </div>
+
         <div id="enter-room-view" class="input-view hidden">
             <h1>Nhập mã phòng</h1>
             <input type="text" id="roomCodeInput" class="input-box" placeholder="Mã phòng">
@@ -308,6 +314,7 @@
             <div id="control-panel">
                 <button id="startButton">BẮT ĐẦU VÒNG CHƠI</button>
                 <button id="newRoundBtn" class="hidden">VÒNG MỚI</button>
+                <button id="newRoomBtn">TẠO PHÒNG MỚI</button>
             </div>
             <div id="countdown-display" class="hidden"></div>
         </div>
@@ -345,11 +352,15 @@
         const createRoomBtn = document.getElementById('createRoomBtn');
         const joinRoomBtn = document.getElementById('joinRoomBtn');
         const startView = document.getElementById('start-view');
+        const recoveryView = document.getElementById('recovery-view'); // Thêm dòng này
+        const returnToOldRoomBtn = document.getElementById('returnToOldRoomBtn'); // Thêm dòng này
+        const returnToHomeBtn = document.getElementById('returnToHomeBtn'); // Thêm dòng này
         const masterView = document.getElementById('master-view');
         const playerView = document.getElementById('player-view');
         const resultsPanel = document.getElementById('results-panel');
         const startButton = document.getElementById('startButton');
         const newRoundBtn = document.getElementById('newRoundBtn');
+        const newRoomBtn = document.getElementById('newRoomBtn'); 
         const buzzerButton = document.getElementById('buzzer-button');
         const resultsList = document.getElementById('results-list');
         const playersList = document.getElementById('players-list');
@@ -474,31 +485,43 @@
             });
         };
         
-        // HÀM MỚI ĐỂ XỬ LÝ KHI TẢI LẠI TRANG
+        // CẬP NHẬT HÀM XỬ LÝ KHI TẢI LẠI TRANG
         const handleInitialLoad = () => {
             const savedIsMaster = localStorage.getItem('isMaster');
             const savedRoomCode = localStorage.getItem('currentRoomCode');
             
             if (savedIsMaster === 'true' && savedRoomCode) {
-                isMaster = true;
-                currentRoomCode = savedRoomCode;
+                // Hiển thị màn hình khôi phục thay vì quay lại phòng cũ tự động
                 startView.classList.add('hidden');
-                masterView.classList.remove('hidden');
-                resultsPanel.classList.remove('hidden');
-                roomCodeDisplay.textContent = currentRoomCode;
-                listenToRoom(currentRoomCode);
+                recoveryView.classList.remove('hidden');
             }
         };
 
-        // GỌI HÀM NÀY KHI TRANG ĐƯỢC TẢI LẦN ĐẦU
         handleInitialLoad();
+
+        // XỬ LÝ SỰ KIỆN CHO CÁC NÚT MỚI
+        returnToOldRoomBtn.addEventListener('click', () => {
+            const savedRoomCode = localStorage.getItem('currentRoomCode');
+            isMaster = true;
+            currentRoomCode = savedRoomCode;
+            recoveryView.classList.add('hidden');
+            masterView.classList.remove('hidden');
+            resultsPanel.classList.remove('hidden');
+            roomCodeDisplay.textContent = currentRoomCode;
+            listenToRoom(currentRoomCode);
+        });
+
+        returnToHomeBtn.addEventListener('click', () => {
+            localStorage.removeItem('isMaster');
+            localStorage.removeItem('currentRoomCode');
+            location.reload(); 
+        });
 
         createRoomBtn.addEventListener('click', async () => {
             isMaster = true;
             const roomCode = generateRoomCode();
             currentRoomCode = roomCode;
 
-            // LƯU TRẠNG THÁI VÀO BỘ NHỚ TẠM
             localStorage.setItem('isMaster', 'true');
             localStorage.setItem('currentRoomCode', currentRoomCode);
 
@@ -517,12 +540,17 @@
         });
 
         joinRoomBtn.addEventListener('click', () => {
-            // ĐẢM BẢO XÓA TRẠNG THÁI CŨ KHI THAM GIA PHÒNG
             localStorage.removeItem('isMaster');
             localStorage.removeItem('currentRoomCode');
             startView.classList.add('hidden');
             enterRoomView.classList.remove('hidden');
             roomCodeInput.focus();
+        });
+
+        newRoomBtn.addEventListener('click', () => {
+            localStorage.removeItem('isMaster');
+            localStorage.removeItem('currentRoomCode');
+            location.reload(); 
         });
 
         nextRoomBtn.addEventListener('click', () => {
@@ -592,7 +620,7 @@
             }, 1000);
         });
 
-        newRoundBtn.addEventListener('click', async () to get latest version {
+        newRoundBtn.addEventListener('click', async () => {
             const roomRef = db.collection('rooms').doc(currentRoomCode);
             await roomRef.update({
                 status: 'inactive',
