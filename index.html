@@ -85,6 +85,19 @@
             -moz-appearance: none;
             appearance: none;
         }
+        
+        .next-button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .next-button img {
+            width: 80px;
+            height: auto;
+        }
 
         #control-panel {
             margin-bottom: 30px;
@@ -282,11 +295,17 @@
         <div id="enter-room-view" class="input-view hidden">
             <h1>Nhập mã phòng</h1>
             <input type="text" id="roomCodeInput" class="input-box" placeholder="Mã phòng">
+            <button id="nextRoomBtn" class="next-button">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Blue_arrow_forward_direction.svg" alt="Next">
+            </button>
         </div>
 
         <div id="enter-name-view" class="input-view hidden">
             <h1>Tên bạn</h1>
             <input type="text" id="nameInput" class="input-box" placeholder="Tên của bạn">
+            <button id="nextNameBtn" class="next-button">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Blue_arrow_forward_direction.svg" alt="Next">
+            </button>
         </div>
 
         <div id="master-view" class="hidden">
@@ -347,8 +366,10 @@
 
         const enterRoomView = document.getElementById('enter-room-view');
         const roomCodeInput = document.getElementById('roomCodeInput');
+        const nextRoomBtn = document.getElementById('nextRoomBtn');
         const enterNameView = document.getElementById('enter-name-view');
         const nameInput = document.getElementById('nameInput');
+        const nextNameBtn = document.getElementById('nextNameBtn');
 
         let isMaster = false;
         let myName = '';
@@ -485,46 +506,42 @@
             roomCodeInput.focus();
         });
 
-        roomCodeInput.addEventListener('keydown', async (event) => {
-            if (event.key === 'Enter') {
-                const roomCode = roomCodeInput.value.trim();
-                if (!roomCode || isNaN(parseInt(roomCode, 10)) || parseInt(roomCode, 10) < 0 || parseInt(roomCode, 10) > 9) {
-                    alert("Mã phòng không hợp lệ! Vui lòng nhập một số từ 0-9.");
-                    return;
-                }
-                enterRoomView.classList.add('hidden');
-                enterNameView.classList.remove('hidden');
-                nameInput.focus();
+        nextRoomBtn.addEventListener('click', () => {
+            const roomCode = roomCodeInput.value.trim();
+            if (!roomCode || isNaN(parseInt(roomCode, 10)) || parseInt(roomCode, 10) < 0 || parseInt(roomCode, 10) > 9) {
+                alert("Mã phòng không hợp lệ! Vui lòng nhập một số từ 0-9.");
+                return;
             }
+            enterRoomView.classList.add('hidden');
+            enterNameView.classList.remove('hidden');
+            nameInput.focus();
         });
 
-        nameInput.addEventListener('keydown', async (event) => {
-            if (event.key === 'Enter') {
-                const name = nameInput.value.trim();
-                if (!name || name.split(' ').length > 1) {
-                    alert("Vui lòng nhập tên bạn vào nhé (chỉ 1 từ)!");
-                    return;
-                }
-
-                myName = name;
-                const roomCode = roomCodeInput.value.trim();
-                const roomRef = db.collection('rooms').doc(roomCode);
-
-                try {
-                    await roomRef.update({
-                        players: firebase.firestore.FieldValue.arrayUnion(myName)
-                    });
-                } catch (error) {
-                    alert("Mã phòng không tồn tại hoặc có lỗi xảy ra!");
-                    return;
-                }
-
-                currentRoomCode = roomCode;
-                enterNameView.classList.add('hidden');
-                playerView.classList.remove('hidden');
-                resultsPanel.classList.remove('hidden');
-                listenToRoom(currentRoomCode);
+        nextNameBtn.addEventListener('click', async () => {
+            const name = nameInput.value.trim();
+            if (!name || name.split(' ').length > 1) {
+                alert("Vui lòng nhập tên bạn vào nhé (chỉ 1 từ)!");
+                return;
             }
+
+            myName = name;
+            const roomCode = roomCodeInput.value.trim();
+            const roomRef = db.collection('rooms').doc(roomCode);
+
+            try {
+                await roomRef.update({
+                    players: firebase.firestore.FieldValue.arrayUnion(myName)
+                });
+            } catch (error) {
+                alert("Mã phòng không tồn tại hoặc có lỗi xảy ra!");
+                return;
+            }
+
+            currentRoomCode = roomCode;
+            enterNameView.classList.add('hidden');
+            playerView.classList.remove('hidden');
+            resultsPanel.classList.remove('hidden');
+            listenToRoom(currentRoomCode);
         });
 
         startButton.addEventListener('click', async () => {
