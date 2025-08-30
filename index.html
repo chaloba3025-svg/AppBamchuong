@@ -133,14 +133,28 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Sử dụng các biến toàn cục được cung cấp bởi môi trường Canvas
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Biến toàn cục từ môi trường
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Khởi tạo Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        let app, db, auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch (error) {
+            console.error("Lỗi khởi tạo Firebase:", error);
+            document.body.innerHTML = `
+                <div class="container bg-white p-8 rounded-xl shadow-lg text-center">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-4">Lỗi Khởi tạo Firebase</h1>
+                    <p class="text-gray-600 mb-4">Không thể khởi tạo Firebase với cấu hình được cung cấp.</p>
+                    <p class="text-gray-600">Vui lòng kiểm tra lại cấu hình dự án của bạn.</p>
+                </div>
+            `;
+            throw error;
+        }
 
         // Biến để lưu trạng thái người dùng
         let userId;
@@ -609,17 +623,15 @@
             }
         });
 
-
         // Khởi tạo ứng dụng và xác thực người dùng
         const authAndInit = async () => {
             try {
-                if (typeof __initial_auth_token !== 'undefined') {
-                    const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
-                    userId = userCredential.user.uid;
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
                 } else {
-                    const userCredential = await signInAnonymously(auth);
-                    userId = userCredential.user.uid;
+                    await signInAnonymously(auth);
                 }
+                userId = auth.currentUser.uid;
                 userIdDisplay.textContent = userId;
                 console.log("Đã xác thực người dùng thành công:", userId);
             } catch (error) {
