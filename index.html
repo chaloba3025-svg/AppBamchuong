@@ -251,6 +251,45 @@
             border-bottom: none;
         }
 
+        /* THAY ĐỔI MỚI CHO MÀN HÌNH KHÔI PHỤC */
+        #recovery-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #recovery-view h1 {
+            font-size: 2em;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        #recovery-view button {
+            width: 80%;
+            max-width: 350px;
+            padding: 20px 0;
+            font-size: 1.5em;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            margin: 15px auto;
+            display: block;
+            transition: background-color 0.3s ease;
+        }
+
+        #returnToOldRoomBtn {
+            background-color: #28a745;
+        }
+
+        #returnToHomeBtn {
+            background-color: #dc3545;
+        }
+
         @media (max-width: 480px) {
             h1 {
                 font-size: 2em;
@@ -276,6 +315,15 @@
                 width: 200px;
                 height: 80px;
                 font-size: 2.5em;
+            }
+            
+            #recovery-view h1 {
+                font-size: 1.8em;
+            }
+
+            #recovery-view button {
+                width: 90%;
+                font-size: 1.3em;
             }
         }
     </style>
@@ -352,9 +400,9 @@
         const createRoomBtn = document.getElementById('createRoomBtn');
         const joinRoomBtn = document.getElementById('joinRoomBtn');
         const startView = document.getElementById('start-view');
-        const recoveryView = document.getElementById('recovery-view'); // Thêm dòng này
-        const returnToOldRoomBtn = document.getElementById('returnToOldRoomBtn'); // Thêm dòng này
-        const returnToHomeBtn = document.getElementById('returnToHomeBtn'); // Thêm dòng này
+        const recoveryView = document.getElementById('recovery-view');
+        const returnToOldRoomBtn = document.getElementById('returnToOldRoomBtn');
+        const returnToHomeBtn = document.getElementById('returnToHomeBtn');
         const masterView = document.getElementById('master-view');
         const playerView = document.getElementById('player-view');
         const resultsPanel = document.getElementById('results-panel');
@@ -485,13 +533,11 @@
             });
         };
         
-        // CẬP NHẬT HÀM XỬ LÝ KHI TẢI LẠI TRANG
         const handleInitialLoad = () => {
             const savedIsMaster = localStorage.getItem('isMaster');
             const savedRoomCode = localStorage.getItem('currentRoomCode');
             
             if (savedIsMaster === 'true' && savedRoomCode) {
-                // Hiển thị màn hình khôi phục thay vì quay lại phòng cũ tự động
                 startView.classList.add('hidden');
                 recoveryView.classList.remove('hidden');
             }
@@ -499,7 +545,6 @@
 
         handleInitialLoad();
 
-        // XỬ LÝ SỰ KIỆN CHO CÁC NÚT MỚI
         returnToOldRoomBtn.addEventListener('click', () => {
             const savedRoomCode = localStorage.getItem('currentRoomCode');
             isMaster = true;
