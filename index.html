@@ -58,7 +58,6 @@
             opacity: 0.9;
         }
 
-        /* Giao diện nhập mã phòng và tên */
         .input-view {
             display: flex;
             flex-direction: column;
@@ -86,8 +85,6 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        /* ... Các style khác không thay đổi ... */
-
         #control-panel {
             margin-bottom: 30px;
         }
@@ -103,7 +100,8 @@
             margin: 5px;
         }
 
-        #countdown-display, #countdown-display-player {
+        #countdown-display,
+        #countdown-display-player {
             font-size: 4em;
             font-weight: bold;
             color: #dc3545;
@@ -123,7 +121,7 @@
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
             transition: background-color 0.3s, transform 0.1s ease-in-out;
         }
 
@@ -138,11 +136,25 @@
         }
 
         @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            75% { transform: translateX(-5px); }
-            100% { transform: translateX(0); }
+            0% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            50% {
+                transform: translateX(5px);
+            }
+
+            75% {
+                transform: translateX(-5px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
         }
 
         #buzzer-button:not(.disabled) {
@@ -163,7 +175,7 @@
             background-color: #fff;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             margin-top: 20px;
         }
 
@@ -209,7 +221,7 @@
             margin-top: 20px;
             background-color: #fff;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             max-height: 200px;
             overflow-y: auto;
         }
@@ -221,7 +233,7 @@
             color: #ffd700;
             font-weight: bold;
             background-color: #333;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
 
         #players-list li:last-child {
@@ -233,18 +245,22 @@
                 font-size: 2em;
                 margin-bottom: 40px;
             }
+
             #start-view button {
                 width: 90%;
                 font-size: 1.5em;
                 padding: 18px 0;
             }
+
             #buzzer-button {
                 width: 120px;
                 height: 120px;
             }
+
             .input-view h1 {
                 font-size: 1.8em;
             }
+
             .input-box {
                 width: 200px;
                 height: 80px;
@@ -253,6 +269,7 @@
         }
     </style>
 </head>
+
 <body>
     <div id="main-container">
         <div id="start-view">
@@ -337,6 +354,7 @@
         let currentRoomCode = '';
         let currentRoundId = '';
         let hasPressedThisRound = false;
+        let hasPlayedSoundForThisRound = false;
 
         const playRingSound = () => {
             const soundFile = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
@@ -359,10 +377,11 @@
                     const players = data.players || [];
                     const status = data.status;
                     const countdown = data.countdown;
-                    
+
                     if (data.round_id !== currentRoundId) {
                         currentRoundId = data.round_id;
                         hasPressedThisRound = false;
+                        hasPlayedSoundForThisRound = false;
                         if (!isMaster) {
                             buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
                         }
@@ -376,7 +395,7 @@
                             playersList.appendChild(li);
                         });
                     }
-                    
+
                     if (status === 'active' && countdown >= 0) {
                         const display = isMaster ? countdownDisplay : countdownDisplayPlayer;
                         display.textContent = countdown === 0 ? 'BẮT ĐẦU!' : countdown;
@@ -384,7 +403,7 @@
                     } else {
                         countdownDisplayPlayer.classList.add('hidden');
                     }
-                    
+
                     if (!isMaster) {
                         if (status === 'active' && countdown <= 0 && !hasPressedThisRound) {
                             buzzerButton.classList.remove('disabled');
@@ -412,18 +431,24 @@
                     }
                 });
 
+                if (pressTimes.length > 0) {
+                    const firstPresserName = pressTimes[0].playerName;
+                    if (firstPresserName === myName) {
+                        if (!hasPlayedSoundForThisRound) {
+                            playRingSound();
+                            hasPlayedSoundForThisRound = true;
+                        }
+                        buzzerButton.classList.add('buzzer-green');
+                    } else if (myName && pressTimes.some(item => item.playerName === myName)) {
+                        buzzerButton.classList.remove('buzzer-green');
+                        buzzerButton.classList.add('buzzer-blue');
+                    }
+                }
+
                 pressTimes.forEach((item, index) => {
                     const li = document.createElement('li');
                     li.innerHTML = `<span class="player-rank">#${index + 1}. ${item.playerName}</span> <span class="player-time">${item.pressTime.toLocaleTimeString()}</span>`;
                     resultsList.appendChild(li);
-
-                    if (index === 0 && item.playerName === myName) {
-                        playRingSound();
-                        buzzerButton.classList.add('buzzer-green');
-                    } else if (item.playerName === myName) {
-                        buzzerButton.classList.remove('buzzer-green');
-                        buzzerButton.classList.add('buzzer-blue');
-                    }
                 });
 
                 if (isMaster && pressTimes.length > 0) {
@@ -432,19 +457,6 @@
                     resultsPanel.classList.remove('hidden');
                 }
             });
-        };
-
-        // Hàm xử lý nhập tên
-        const handleNameInput = () => {
-            const newName = prompt("Nhập tên bạn vào nhé (1 từ):");
-            if (newName && newName.split(' ').length === 1) {
-                myName = newName;
-                nameInputBox.textContent = myName;
-            } else {
-                alert("Vui lòng nhập tên bạn vào nhé (chỉ 1 từ)!");
-                // Gọi lại hàm để yêu cầu nhập lại nếu không hợp lệ
-                // handleNameInput(); // Có thể gây vòng lặp vô hạn
-            }
         };
 
         createRoomBtn.addEventListener('click', async () => {
@@ -471,7 +483,7 @@
             enterRoomView.classList.remove('hidden');
 
             const roomCode = await new Promise(resolve => {
-                roomCodeInputBox.textContent = "Nhập..."; // Trạng thái chờ
+                roomCodeInputBox.textContent = "Nhập...";
                 roomCodeInputBox.addEventListener('click', () => {
                     const code = prompt("Nhập mã phòng (một số từ 0-9):");
                     if (code && !isNaN(parseInt(code, 10)) && parseInt(code, 10) >= 0 && parseInt(code, 10) <= 9) {
@@ -480,7 +492,9 @@
                     } else {
                         alert("Mã phòng không hợp lệ! Vui lòng nhập một số từ 0-9.");
                     }
-                }, { once: true });
+                }, {
+                    once: true
+                });
             });
 
             if (!roomCode) return;
@@ -498,7 +512,9 @@
                     } else {
                         alert("Vui lòng nhập tên bạn vào nhé (chỉ 1 từ)!");
                     }
-                }, { once: true });
+                }, {
+                    once: true
+                });
             });
 
             if (!name) return;
