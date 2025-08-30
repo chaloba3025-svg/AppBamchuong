@@ -473,11 +473,34 @@
                 }
             });
         };
+        
+        // HÀM MỚI ĐỂ XỬ LÝ KHI TẢI LẠI TRANG
+        const handleInitialLoad = () => {
+            const savedIsMaster = localStorage.getItem('isMaster');
+            const savedRoomCode = localStorage.getItem('currentRoomCode');
+            
+            if (savedIsMaster === 'true' && savedRoomCode) {
+                isMaster = true;
+                currentRoomCode = savedRoomCode;
+                startView.classList.add('hidden');
+                masterView.classList.remove('hidden');
+                resultsPanel.classList.remove('hidden');
+                roomCodeDisplay.textContent = currentRoomCode;
+                listenToRoom(currentRoomCode);
+            }
+        };
+
+        // GỌI HÀM NÀY KHI TRANG ĐƯỢC TẢI LẦN ĐẦU
+        handleInitialLoad();
 
         createRoomBtn.addEventListener('click', async () => {
             isMaster = true;
             const roomCode = generateRoomCode();
             currentRoomCode = roomCode;
+
+            // LƯU TRẠNG THÁI VÀO BỘ NHỚ TẠM
+            localStorage.setItem('isMaster', 'true');
+            localStorage.setItem('currentRoomCode', currentRoomCode);
 
             await db.collection('rooms').doc(roomCode).set({
                 status: 'inactive',
@@ -494,6 +517,9 @@
         });
 
         joinRoomBtn.addEventListener('click', () => {
+            // ĐẢM BẢO XÓA TRẠNG THÁI CŨ KHI THAM GIA PHÒNG
+            localStorage.removeItem('isMaster');
+            localStorage.removeItem('currentRoomCode');
             startView.classList.add('hidden');
             enterRoomView.classList.remove('hidden');
             roomCodeInput.focus();
@@ -566,7 +592,7 @@
             }, 1000);
         });
 
-        newRoundBtn.addEventListener('click', async () => {
+        newRoundBtn.addEventListener('click', async () to get latest version {
             const roomRef = db.collection('rooms').doc(currentRoomCode);
             await roomRef.update({
                 status: 'inactive',
