@@ -31,7 +31,8 @@
             margin-bottom: 50px;
         }
 
-        #start-view button {
+        #start-view button,
+        #join-view-buttons button {
             width: 80%;
             max-width: 300px;
             padding: 20px 0;
@@ -56,6 +57,36 @@
         #start-view button:hover {
             opacity: 0.9;
         }
+
+        /* Giao diện nhập mã phòng và tên */
+        .input-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .input-view h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .input-box {
+            width: 250px;
+            height: 100px;
+            background-color: #ffd700;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            border: 2px solid #000;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ... Các style khác không thay đổi ... */
 
         #control-panel {
             margin-bottom: 30px;
@@ -172,6 +203,31 @@
             display: none;
         }
 
+        #players-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #players-list li {
+            font-size: 1.2em;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            color: #ffd700;
+            font-weight: bold;
+            background-color: #333;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        #players-list li:last-child {
+            border-bottom: none;
+        }
+
         @media (max-width: 480px) {
             h1 {
                 font-size: 2em;
@@ -186,6 +242,14 @@
                 width: 120px;
                 height: 120px;
             }
+            .input-view h1 {
+                font-size: 1.8em;
+            }
+            .input-box {
+                width: 200px;
+                height: 80px;
+                font-size: 2.5em;
+            }
         }
     </style>
 </head>
@@ -195,6 +259,16 @@
             <h1>APP BẤM CHUÔNG</h1>
             <button id="createRoomBtn">TẠO PHÒNG</button>
             <button id="joinRoomBtn">VÀO PHÒNG</button>
+        </div>
+
+        <div id="enter-room-view" class="input-view hidden">
+            <h1>Nhập mã phòng</h1>
+            <div id="roomCodeInputBox" class="input-box"></div>
+        </div>
+
+        <div id="enter-name-view" class="input-view hidden">
+            <h1>Tên bạn</h1>
+            <div id="nameInputBox" class="input-box"></div>
         </div>
 
         <div id="master-view" class="hidden">
@@ -252,7 +326,12 @@
         const countdownDisplay = document.getElementById('countdown-display');
         const countdownDisplayPlayer = document.getElementById('countdown-display-player');
         const roomCodeDisplay = document.getElementById('roomCodeDisplay');
-        
+
+        const enterRoomView = document.getElementById('enter-room-view');
+        const roomCodeInputBox = document.getElementById('roomCodeInputBox');
+        const enterNameView = document.getElementById('enter-name-view');
+        const nameInputBox = document.getElementById('nameInputBox');
+
         let isMaster = false;
         let myName = '';
         let currentRoomCode = '';
@@ -268,7 +347,7 @@
         };
 
         const generateRoomCode = () => {
-            return Math.floor(1000 + Math.random() * 9000).toString();
+            return Math.floor(Math.random() * 10).toString();
         };
 
         const listenToRoom = (roomCode) => {
@@ -355,6 +434,19 @@
             });
         };
 
+        // Hàm xử lý nhập tên
+        const handleNameInput = () => {
+            const newName = prompt("Nhập tên bạn vào nhé (1 từ):");
+            if (newName && newName.split(' ').length === 1) {
+                myName = newName;
+                nameInputBox.textContent = myName;
+            } else {
+                alert("Vui lòng nhập tên bạn vào nhé (chỉ 1 từ)!");
+                // Gọi lại hàm để yêu cầu nhập lại nếu không hợp lệ
+                // handleNameInput(); // Có thể gây vòng lặp vô hạn
+            }
+        };
+
         createRoomBtn.addEventListener('click', async () => {
             isMaster = true;
             const roomCode = generateRoomCode();
@@ -375,16 +467,42 @@
         });
 
         joinRoomBtn.addEventListener('click', async () => {
-            const roomCode = prompt("Nhập mã phòng 4 chữ số:");
-            if (!roomCode || roomCode.length !== 4) {
-                alert("Mã phòng không hợp lệ!");
-                return;
-            }
-            myName = prompt("Nhập tên bạn vào nhé:");
-            if (!myName) {
-                alert("Vui lòng nhập tên để chơi!");
-                return;
-            }
+            startView.classList.add('hidden');
+            enterRoomView.classList.remove('hidden');
+
+            const roomCode = await new Promise(resolve => {
+                roomCodeInputBox.textContent = "Nhập..."; // Trạng thái chờ
+                roomCodeInputBox.addEventListener('click', () => {
+                    const code = prompt("Nhập mã phòng (một số từ 0-9):");
+                    if (code && !isNaN(parseInt(code, 10)) && parseInt(code, 10) >= 0 && parseInt(code, 10) <= 9) {
+                        roomCodeInputBox.textContent = code;
+                        resolve(code);
+                    } else {
+                        alert("Mã phòng không hợp lệ! Vui lòng nhập một số từ 0-9.");
+                    }
+                }, { once: true });
+            });
+
+            if (!roomCode) return;
+
+            enterRoomView.classList.add('hidden');
+            enterNameView.classList.remove('hidden');
+
+            const name = await new Promise(resolve => {
+                nameInputBox.textContent = "Nhập...";
+                nameInputBox.addEventListener('click', () => {
+                    const nameInput = prompt("Nhập tên bạn vào nhé (1 từ):");
+                    if (nameInput && nameInput.split(' ').length === 1) {
+                        nameInputBox.textContent = nameInput;
+                        resolve(nameInput);
+                    } else {
+                        alert("Vui lòng nhập tên bạn vào nhé (chỉ 1 từ)!");
+                    }
+                }, { once: true });
+            });
+
+            if (!name) return;
+            myName = name;
 
             const roomRef = db.collection('rooms').doc(roomCode);
             try {
@@ -397,7 +515,7 @@
             }
 
             currentRoomCode = roomCode;
-            startView.classList.add('hidden');
+            enterNameView.classList.add('hidden');
             playerView.classList.remove('hidden');
             resultsPanel.classList.remove('hidden');
             listenToRoom(roomCode);
