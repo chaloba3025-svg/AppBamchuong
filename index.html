@@ -7,9 +7,9 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            background-color: #8B0000;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -17,18 +17,50 @@
             align-items: center;
             min-height: 100vh;
         }
+
         #main-container {
             width: 100%;
             max-width: 600px;
             padding: 20px;
+            box-sizing: border-box;
         }
+
         h1 {
-            color: #333;
-            font-size: 2em;
+            color: #FFFFFF;
+            font-size: 2.5em;
+            margin-bottom: 50px;
         }
+
+        #start-view button {
+            width: 80%;
+            max-width: 300px;
+            padding: 20px 0;
+            font-size: 1.8em;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            margin: 15px auto;
+            display: block;
+            transition: background-color 0.3s ease;
+        }
+
+        #createRoomBtn {
+            background-color: #28a745;
+        }
+
+        #joinRoomBtn {
+            background-color: #007bff;
+        }
+
+        #start-view button:hover {
+            opacity: 0.9;
+        }
+
         #control-panel {
             margin-bottom: 30px;
         }
+
         #control-panel button {
             padding: 15px 30px;
             font-size: 1.2em;
@@ -39,12 +71,14 @@
             color: white;
             margin: 5px;
         }
-        #countdown-display {
+
+        #countdown-display, #countdown-display-player {
             font-size: 4em;
             font-weight: bold;
             color: #dc3545;
             margin-top: 20px;
         }
+
         #buzzer-button {
             width: 150px;
             height: 150px;
@@ -61,13 +95,17 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.2);
             transition: background-color 0.3s, transform 0.1s ease-in-out;
         }
+
         #buzzer-button.disabled {
             background-color: #ccc !important;
             cursor: not-allowed;
+            animation: none !important;
         }
+
         #buzzer-button:active:not(.disabled) {
             transform: scale(0.95);
         }
+
         @keyframes shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
@@ -75,15 +113,19 @@
             75% { transform: translateX(-5px); }
             100% { transform: translateX(0); }
         }
+
         #buzzer-button:not(.disabled) {
             animation: shake 0.5s infinite;
         }
+
         .buzzer-blue {
             background-color: #007bff !important;
         }
+
         .buzzer-green {
             background-color: #28a745 !important;
         }
+
         #results-panel {
             width: 100%;
             max-width: 500px;
@@ -93,16 +135,19 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
             margin-top: 20px;
         }
+
         #results-panel h2 {
             color: #555;
             font-size: 1.5em;
             margin-bottom: 10px;
         }
+
         #results-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
+
         #results-list li {
             padding: 10px;
             border-bottom: 1px solid #eee;
@@ -110,25 +155,32 @@
             display: flex;
             justify-content: space-between;
         }
+
         #results-list li:last-child {
             border-bottom: none;
         }
+
         .player-rank {
             font-weight: bold;
         }
+
         .player-time {
             color: #888;
         }
+
         .hidden {
             display: none;
         }
+
         @media (max-width: 480px) {
             h1 {
-                font-size: 1.5em;
+                font-size: 2em;
+                margin-bottom: 40px;
             }
-            #control-panel button {
-                padding: 10px 20px;
-                font-size: 1em;
+            #start-view button {
+                width: 90%;
+                font-size: 1.5em;
+                padding: 18px 0;
             }
             #buzzer-button {
                 width: 120px;
@@ -140,7 +192,7 @@
 <body>
     <div id="main-container">
         <div id="start-view">
-            <h1>App Bấm Chuông</h1>
+            <h1>APP BẤM CHUÔNG</h1>
             <button id="createRoomBtn">TẠO PHÒNG</button>
             <button id="joinRoomBtn">VÀO PHÒNG</button>
         </div>
@@ -206,8 +258,6 @@
         let currentRoomCode = '';
         let currentRoundId = '';
         let hasPressedThisRound = false;
-
-        const ringSound = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
 
         const playRingSound = () => {
             const soundFile = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
@@ -337,9 +387,14 @@
             }
 
             const roomRef = db.collection('rooms').doc(roomCode);
-            await roomRef.update({
-                players: firebase.firestore.FieldValue.arrayUnion(myName)
-            });
+            try {
+                await roomRef.update({
+                    players: firebase.firestore.FieldValue.arrayUnion(myName)
+                });
+            } catch (error) {
+                alert("Mã phòng không tồn tại hoặc có lỗi xảy ra!");
+                return;
+            }
 
             currentRoomCode = roomCode;
             startView.classList.add('hidden');
@@ -356,10 +411,6 @@
                 countdown: 3,
                 round_id: newRoundId
             });
-
-            if(!isMaster){
-                buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
-            }
 
             const pressesRef = roomRef.collection('presses');
             const snapshot = await pressesRef.get();
@@ -391,17 +442,12 @@
             startButton.classList.remove('hidden');
             newRoundBtn.classList.add('hidden');
             resultsPanel.classList.add('hidden');
-            
-            if(!isMaster){
-                buzzerButton.classList.remove('buzzer-blue', 'buzzer-green');
-            }
         });
 
         buzzerButton.addEventListener('click', async () => {
             const roomRef = db.collection('rooms').doc(currentRoomCode);
             const doc = await roomRef.get();
             const data = doc.data();
-            const roundIdOnServer = data.round_id;
 
             if (buzzerButton.classList.contains('disabled') || hasPressedThisRound) {
                 alert("Bạn đã bấm rồi hoặc vòng chơi chưa bắt đầu!");
@@ -415,15 +461,6 @@
                     pressTime: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 hasPressedThisRound = true;
-                buzzerButton.classList.add('buzzer-blue');
-
-                const pressSnap = await pressCollectionRef.orderBy('pressTime').limit(1).get();
-                if (pressSnap.docs.length > 0) {
-                    const firstPresserName = pressSnap.docs[0].data().playerName;
-                    if (firstPresserName === myName) {
-                        playRingSound();
-                    }
-                }
             } else {
                 alert('Vòng chơi chưa bắt đầu hoặc đã kết thúc!');
             }
