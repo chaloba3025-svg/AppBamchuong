@@ -87,16 +87,13 @@
         }
         
         .next-button {
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 20px;
+            width: 0;
+            height: 0;
+            border-top: 50px solid transparent;
+            border-bottom: 50px solid transparent;
+            border-left: 80px solid #007bff;
             margin-top: 20px;
-        }
-
-        .next-button img {
-            width: 80px;
-            height: auto;
+            cursor: pointer;
         }
 
         #control-panel {
@@ -295,17 +292,13 @@
         <div id="enter-room-view" class="input-view hidden">
             <h1>Nhập mã phòng</h1>
             <input type="text" id="roomCodeInput" class="input-box" placeholder="Mã phòng">
-            <button id="nextRoomBtn" class="next-button">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Blue_arrow_forward_direction.svg" alt="Next">
-            </button>
+            <div id="nextRoomBtn" class="next-button"></div>
         </div>
 
         <div id="enter-name-view" class="input-view hidden">
             <h1>Tên bạn</h1>
             <input type="text" id="nameInput" class="input-box" placeholder="Tên của bạn">
-            <button id="nextNameBtn" class="next-button">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Blue_arrow_forward_direction.svg" alt="Next">
-            </button>
+            <div id="nextNameBtn" class="next-button"></div>
         </div>
 
         <div id="master-view" class="hidden">
