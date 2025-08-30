@@ -251,7 +251,6 @@
             border-bottom: none;
         }
 
-        /* THAY ĐỔI MỚI CHO MÀN HÌNH KHÔI PHỤC */
         #recovery-view {
             display: flex;
             flex-direction: column;
@@ -362,7 +361,6 @@
             <div id="control-panel">
                 <button id="startButton">BẮT ĐẦU VÒNG CHƠI</button>
                 <button id="newRoundBtn" class="hidden">VÒNG MỚI</button>
-                <button id="newRoomBtn">TẠO PHÒNG MỚI</button>
             </div>
             <div id="countdown-display" class="hidden"></div>
         </div>
@@ -408,7 +406,6 @@
         const resultsPanel = document.getElementById('results-panel');
         const startButton = document.getElementById('startButton');
         const newRoundBtn = document.getElementById('newRoundBtn');
-        const newRoomBtn = document.getElementById('newRoomBtn'); 
         const buzzerButton = document.getElementById('buzzer-button');
         const resultsList = document.getElementById('results-list');
         const playersList = document.getElementById('players-list');
@@ -590,12 +587,6 @@
             startView.classList.add('hidden');
             enterRoomView.classList.remove('hidden');
             roomCodeInput.focus();
-        });
-
-        newRoomBtn.addEventListener('click', () => {
-            localStorage.removeItem('isMaster');
-            localStorage.removeItem('currentRoomCode');
-            location.reload(); 
         });
 
         nextRoomBtn.addEventListener('click', () => {
